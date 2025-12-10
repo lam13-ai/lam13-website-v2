@@ -1,0 +1,206 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Lam13.ai Design System - Navy Blue & Grey on White */
+    
+    /* Primary Colors - Pure White Foundation */
+    --background: 0 0% 100%; /* Pure White */
+    --foreground: 220 30% 15%; /* Dark Navy Text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 15%;
+
+    /* Brand Colors */
+    --primary: 220 60% 20%; /* Navy Blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 10% 94%; /* Light Grey */
+    --secondary-foreground: 220 30% 15%;
+
+    --accent: 220 70% 25%; /* Deep Navy Accent */
+    --accent-foreground: 0 0% 100%;
+
+    --teal: 220 50% 35%; /* Medium Navy */
+
+    --muted: 220 10% 92%;
+    --muted-foreground: 220 10% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 88%;
+    --input: 220 10% 88%;
+    --ring: 220 60% 20%;
+
+    --radius: 0.5rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 60% 20%), hsl(220 50% 30%));
+    --gradient-accent: linear-gradient(135deg, hsl(220 70% 25%), hsl(220 50% 35%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 10% 97%));
+
+    /* Shadows */
+    --shadow-card: 0 2px 8px hsl(220 60% 20% / 0.06);
+    --shadow-elevated: 0 8px 24px hsl(220 60% 20% / 0.10);
+    
+    /* Typography */
+    --font-display: 'Verdana', 'Geneva', sans-serif;
+    --font-body: 'Verdana', 'Geneva', sans-serif;
+
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 30% 15%;
+    --sidebar-primary: 220 60% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 94%;
+    --sidebar-accent-foreground: 220 30% 15%;
+    --sidebar-border: 220 10% 88%;
+    --sidebar-ring: 220 60% 20%;
+  }
+
+  .dark {
+    --background: 220 40% 8%; /* Deep Navy */
+    --foreground: 220 15% 95%;
+
+    --card: 220 35% 12%;
+    --card-foreground: 220 15% 95%;
+
+    --popover: 220 35% 12%;
+    --popover-foreground: 220 15% 95%;
+
+    --primary: 220 15% 95%;
+    --primary-foreground: 220 40% 8%;
+
+    --secondary: 220 30% 16%;
+    --secondary-foreground: 220 15% 95%;
+
+    --accent: 210 100% 55%;
+    --accent-foreground: 220 40% 8%;
+
+    --teal: 200 80% 50%;
+
+    --muted: 220 30% 16%;
+    --muted-foreground: 220 15% 65%;
+
+    --destructive: 0 62% 35%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 210 100% 55%;
+    
+    --sidebar-background: 220 40% 6%;
+    --sidebar-foreground: 220 15% 95%;
+    --sidebar-primary: 210 100% 55%;
+    --sidebar-primary-foreground: 220 40% 8%;
+    --sidebar-accent: 220 30% 16%;
+    --sidebar-accent-foreground: 220 15% 95%;
+    --sidebar-border: 220 30% 20%;
+    --sidebar-ring: 210 100% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .text-gradient-accent {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-accent);
+  }
+
+  /* AI-themed animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { opacity: 0.5; filter: blur(20px); }
+    50% { opacity: 0.8; filter: blur(30px); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+
+  @keyframes grid-flow {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(48px); }
+  }
+
+  @keyframes draw-question {
+    0% { 
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    50% { 
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+    100% { 
+      stroke-dasharray: 1;
+      stroke-dashoffset: -1;
+    }
+  }
+
+  @keyframes typewriter {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 4s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 3s linear infinite;
+  }
+
+  .animate-grid-flow {
+    animation: grid-flow 20s linear infinite;
+  }
+
+  .animate-draw-question {
+    animation: draw-question 3s ease-in-out infinite;
+  }
+
+  .animate-typewriter {
+    display: inline;
+    animation: typewriter 3s steps(80) forwards;
+  }
+}
