@@ -5,12 +5,20 @@ import { Label } from "@/components/ui/label";
 import { NavLink } from "@/components/NavLink";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useNavigate } from "react-router-dom";
+
 
 type AuthMode = "signin" | "register";
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL
+
 
 const Auth = () => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [showPassword, setShowPassword] = useState(false);
+  const [errorSignIn, setErrorSignIn] = useState("");
+  const [errorRegister, setErrorRegister] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,11 +26,65 @@ const Auth = () => {
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     // Mock submission - will be replaced with real auth later
     console.log("Form submitted:", { mode, ...formData });
-  };
+    try {
+      console.log(BACKEND_API_URL)
+      if (mode=="signin"){
+        const email = formData.email
+        const password = formData.password
+        const res = await fetch(BACKEND_API_URL +"/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password}),
+
+        });
+        
+        const data = await res.json();
+        if (!data.success) {
+          const err = data
+          setErrorSignIn(err.detail)
+        }
+        else{
+          navigate("/try")
+        }
+
+        // Save token locally
+        
+}
+else if(mode=="register"){
+  const { name, email, password, confirmPassword } = formData;
+
+  console.log("here")
+  const res = await fetch(BACKEND_API_URL +"/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({name,email,password}),
+
+  });
+
+  const data = await res.json();
+
+  if (!data.success){
+    setErrorRegister(data.detail)
+
+  }
+  else{
+    navigate("/try")
+  }
+
+
+
+ 
+
+}
+      } catch (err) {
+        console.log(err)
+      }
+    };
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -103,6 +165,7 @@ const Auth = () => {
             >
               Sign In
             </button>
+
             <button
               onClick={() => setMode("register")}
               className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
@@ -129,6 +192,9 @@ const Auth = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+          {errorRegister && mode === "register" && (
+                <div className="text-red-500 text-sm text-center mb-2">{errorRegister}</div>
+              )}
             {mode === "register" && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-foreground/80">
@@ -149,6 +215,11 @@ const Auth = () => {
             )}
 
             <div className="space-y-2">
+
+              {/* Error Message if login incorrect */}
+              {errorSignIn && mode === "signin" && (
+                <div className="text-red-500 text-sm text-center mb-2">{errorSignIn}</div>
+              )}
               <Label htmlFor="email" className="text-foreground/80">
                 Email Address
               </Label>
@@ -226,6 +297,7 @@ const Auth = () => {
               {mode === "signin" ? "Sign In" : "Create Account"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
+
           </form>
 
           {/* Terms */}
