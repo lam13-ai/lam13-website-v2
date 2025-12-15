@@ -12,6 +12,8 @@ const isReport = (content: string): boolean => {
   const hasSections = content.includes('\n\n');
   return hasLength || (hasHeaders && hasSections);
 };
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL
+
 
 // Download content as a file
 const downloadAsFile = (content: string, filename: string) => {
@@ -26,7 +28,6 @@ const downloadAsFile = (content: string, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-const CHAT_API_URL = "https://eshmun-step1backend-dtbudjeabrh4hhg0.swedencentral-01.azurewebsites.net/chat";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -121,7 +122,7 @@ const TryUs = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch(CHAT_API_URL, {
+      const response = await fetch(BACKEND_API_URL +"/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
