@@ -1,37 +1,11 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Brain, Target, Lightbulb, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const About = () => {
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const quoteRef = useRef<HTMLQuoteElement>(null);
   const [isQuoteVisible, setIsQuoteVisible] = useState(false);
-  
-  useEffect(() => {
-    const cards = cardRefs.current;
-    if (cards.length === 0) return;
-
-    const animateCards = () => {
-      cards.forEach((card, index) => {
-        if (!card) return;
-        
-        setTimeout(() => {
-          card.classList.add('hover-active');
-          setTimeout(() => {
-            card.classList.remove('hover-active');
-          }, 1000);
-        }, index * 1500);
-      });
-    };
-
-    // Start animation
-    animateCards();
-    // Repeat animation
-    const interval = setInterval(animateCards, cards.length * 1500 + 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -52,27 +26,6 @@ const About = () => {
     return () => observer.disconnect();
   }, [isQuoteVisible]);
 
-  const approachSteps = [
-    {
-      number: "01",
-      title: "Understand",
-      description: "Deep immersion into your institutional context, challenges, and strategic imperatives.",
-      icon: Brain
-    },
-    {
-      number: "02",
-      title: "Model",
-      description: "LAM-powered analysis that simulates scenarios, tests strategies, and generates insights.",
-      icon: Target
-    },
-    {
-      number: "03",
-      title: "Deliver",
-      description: "Actionable strategies with clear implementation pathways and measurable outcomes.",
-      icon: Lightbulb
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -87,7 +40,7 @@ const About = () => {
 
               {/* Main headline with gradient text */}
               <div className="animate-fade-in">
-                <h1 className="text-6xl md:text-8xl font-bold leading-tight tracking-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold leading-tight tracking-tight">
                   <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
                     About{" "}
                   </span>
@@ -98,7 +51,7 @@ const About = () => {
               </div>
 
               {/* Subheadline with gradient */}
-              <p className="text-xl md:text-2xl font-light max-w-3xl leading-relaxed animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <p className="text-lg sm:text-xl md:text-2xl font-light max-w-3xl leading-relaxed animate-fade-in px-2" style={{ animationDelay: '0.1s' }}>
                 <span className="bg-gradient-to-r from-foreground via-muted-foreground to-foreground bg-clip-text text-transparent">
                   Where artificial intelligence meets governmental excellence
                 </span>
@@ -118,7 +71,7 @@ const About = () => {
               <div className="h-px bg-gradient-to-r from-accent/60 via-accent/30 to-transparent mt-3 max-w-[120px]" />
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent pb-2">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 md:mb-8 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent pb-2">
               AI-Native Strategy for the Public Sector
             </h2>
             
@@ -148,13 +101,13 @@ const About = () => {
               Large Agentic Models
             </h2>
             
-            <div className="relative p-10 rounded-3xl bg-gradient-to-br from-card via-card/80 to-teal/5 border border-teal/20 shadow-2xl">
+            <div className="relative p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br from-card via-card/80 to-teal/5 border border-teal/20 shadow-2xl">
               <div className="absolute top-0 left-0 w-32 h-32 bg-teal/10 rounded-full blur-2xl" />
               <div className="absolute bottom-0 right-0 w-40 h-40 bg-accent/10 rounded-full blur-2xl" />
               
               <blockquote 
                 ref={quoteRef}
-                className="relative z-10 text-2xl md:text-3xl font-semibold text-foreground leading-relaxed"
+                className="relative z-10 text-xl sm:text-2xl md:text-3xl font-semibold text-foreground leading-relaxed"
               >
                 <span className={isQuoteVisible ? "animate-typewriter" : "opacity-0"}>
                   "LAMs understand human policy intentions and translate them into strategic actions."
@@ -184,10 +137,10 @@ const About = () => {
               Why LAM13?
             </h2>
             
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div className="relative group">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
+              <div className="relative group order-2 md:order-1">
                 <div className="absolute inset-0 bg-gradient-to-br from-teal via-accent to-teal opacity-20 rounded-3xl blur-xl group-hover:opacity-30 transition-opacity duration-500" />
-                <div className="relative p-12 rounded-3xl bg-gradient-to-br from-card to-card/50 border border-teal/20 text-center">
+                <div className="relative p-8 sm:p-10 md:p-12 rounded-3xl bg-gradient-to-br from-card to-card/50 border border-teal/20 text-center">
                   <div className="text-8xl font-bold bg-gradient-to-br from-teal via-accent to-teal bg-clip-text text-transparent mb-4">
                     لامع
                   </div>
@@ -196,7 +149,7 @@ const About = () => {
                 </div>
               </div>
               
-              <div className="space-y-6">
+              <div className="space-y-6 order-1 md:order-2">
                 <div className="flex items-start gap-4">
                   <ArrowRight className="w-6 h-6 text-teal flex-shrink-0 mt-1" />
                   <div>
@@ -226,60 +179,6 @@ const About = () => {
         </div>
       </section>
 
-      {/* Our Approach */}
-      <section className="py-16 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 via-background to-teal/5" />
-        
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="inline-flex flex-col items-center mb-8">
-                <span className="text-sm font-bold tracking-wider uppercase text-teal">Our Approach</span>
-                <div className="h-px bg-gradient-to-r from-transparent via-teal/60 to-transparent mt-3 w-[120px]" />
-              </div>
-              
-              <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal via-accent to-primary bg-clip-text text-transparent pb-2">
-                How We Work
-              </h2>
-            </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              {approachSteps.map((step, index) => {
-                return (
-                  <div 
-                    key={index}
-                    ref={(el) => cardRefs.current[index] = el}
-                    className="relative group transition-all duration-500"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-teal/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 group-[.hover-active]:opacity-100 transition-opacity duration-500" />
-                    
-                    <div className="relative p-8 rounded-2xl bg-gradient-to-br from-card to-card/50 border border-border/50 group-hover:border-teal/50 group-[.hover-active]:border-teal/50 transition-all duration-500 h-full">
-                      <div className="text-6xl font-bold text-teal/20 mb-6">
-                        {step.number}
-                      </div>
-                      
-                      <h3 className="text-2xl font-bold text-foreground mb-4 group-hover:text-teal group-[.hover-active]:text-teal transition-colors duration-500">
-                        {step.title}
-                      </h3>
-                      
-                      <p className="text-muted-foreground leading-relaxed">
-                        {step.description}
-                      </p>
-                    </div>
-                    
-                    {index < approachSteps.length - 1 && (
-                      <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-20">
-                        <ArrowRight className="w-8 h-8 text-teal/30" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Meet Our Team */}
       <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background">
         <div className="container mx-auto px-6">
@@ -298,14 +197,18 @@ const About = () => {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
               {[
                 {
                   name: "Dr. Sarah Chen",
                   role: "Chief Strategy Officer",
                   image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
                   description: "Leading our strategic vision with 15+ years of experience in public sector transformation and AI implementation.",
-                  previousWork: ["McKinsey & Company", "World Bank", "MIT"],
+                  previousWorkLogos: [
+                    { name: "McKinsey & Company", logo: "https://logo.clearbit.com/mckinsey.com" },
+                    { name: "World Bank", logo: "https://logo.clearbit.com/worldbank.org" },
+                    { name: "MIT", logo: "https://logo.clearbit.com/mit.edu" }
+                  ],
                   strengths: ["Strategic Planning", "AI Policy", "Digital Transformation"]
                 },
                 {
@@ -313,7 +216,11 @@ const About = () => {
                   role: "Head of AI Research",
                   image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
                   description: "Pioneering our Large Agentic Models with expertise in machine learning and governmental applications.",
-                  previousWork: ["Google DeepMind", "Stanford AI Lab", "DARPA"],
+                  previousWorkLogos: [
+                    { name: "Google DeepMind", logo: "https://logo.clearbit.com/deepmind.com" },
+                    { name: "Stanford", logo: "https://logo.clearbit.com/stanford.edu" },
+                    { name: "DARPA", logo: "https://logo.clearbit.com/darpa.mil" }
+                  ],
                   strengths: ["Machine Learning", "NLP", "Agent Architecture"]
                 },
                 {
@@ -321,7 +228,11 @@ const About = () => {
                   role: "Director of Public Sector",
                   image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face",
                   description: "Bridging technology and governance with deep expertise in Middle Eastern and African public institutions.",
-                  previousWork: ["UAE Government", "African Development Bank", "Deloitte"],
+                  previousWorkLogos: [
+                    { name: "UAE Government", logo: "https://logo.clearbit.com/government.ae" },
+                    { name: "African Development Bank", logo: "https://logo.clearbit.com/afdb.org" },
+                    { name: "Deloitte", logo: "https://logo.clearbit.com/deloitte.com" }
+                  ],
                   strengths: ["Government Relations", "Policy Design", "Regional Expertise"]
                 },
                 {
@@ -329,7 +240,11 @@ const About = () => {
                   role: "Chief Technology Officer",
                   image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
                   description: "Architecting our AI infrastructure with a focus on security, scalability, and governmental compliance.",
-                  previousWork: ["Amazon Web Services", "Pentagon", "Palantir"],
+                  previousWorkLogos: [
+                    { name: "Amazon Web Services", logo: "https://logo.clearbit.com/aws.amazon.com" },
+                    { name: "Pentagon", logo: "https://logo.clearbit.com/defense.gov" },
+                    { name: "Palantir", logo: "https://logo.clearbit.com/palantir.com" }
+                  ],
                   strengths: ["Cloud Architecture", "Security", "Scalable Systems"]
                 }
               ].map((member, index) => (
@@ -363,17 +278,28 @@ const About = () => {
                         {member.description}
                       </p>
                       
-                      {/* Previous Work */}
+                      {/* Previous Work Logos */}
                       <div className="mb-4">
-                        <p className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-2">Previously at</p>
-                        <div className="flex flex-wrap gap-2">
-                          {member.previousWork.map((work, i) => (
-                            <span 
+                        <p className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-3">Previously at</p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {member.previousWorkLogos.map((work, i) => (
+                            <div
                               key={i}
-                              className="px-2 py-1 text-xs rounded-md bg-secondary/50 text-foreground/70"
+                              className="w-8 h-8 rounded-md bg-white p-1 flex items-center justify-center shadow-sm border border-border/30"
+                              title={work.name}
                             >
-                              {work}
-                            </span>
+                              <img 
+                                src={work.logo} 
+                                alt={work.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  // Fallback to text if logo fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.parentElement!.innerHTML = `<span class="text-[8px] font-medium text-foreground/70">${work.name.substring(0, 3)}</span>`;
+                                }}
+                              />
+                            </div>
                           ))}
                         </div>
                       </div>

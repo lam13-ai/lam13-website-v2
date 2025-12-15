@@ -1,4 +1,4 @@
-import { Brain, Target, BarChart3, Zap } from "lucide-react";
+import { Brain, Target, BarChart3, Zap, Shield } from "lucide-react";
 
 const pillars = [
   {
@@ -15,6 +15,11 @@ const pillars = [
     icon: BarChart3,
     title: "KPI, Benchmark & Policy Framework Design",
     description: "Build robust frameworks for tracking performance, benchmarking progress, and ensuring strategic clarity."
+  },
+  {
+    icon: Shield,
+    title: "AI Governance & Risk Management",
+    description: "Establish governance structures and risk frameworks to ensure responsible AI deployment across public institutions."
   }
 ];
 
@@ -28,29 +33,29 @@ const WhatWeDo = () => {
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 mb-6 animate-fade-in">
               <Zap className="w-5 h-5 text-accent animate-pulse" />
               <span className="text-sm font-semibold uppercase tracking-wider text-accent">Core Capabilities</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               What We Do
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Three pillars of AI-native strategic transformation
+              Four pillars of AI-native strategic transformation
             </p>
           </div>
 
           {/* Pillars Grid */}
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {pillars.map((pillar, index) => {
               const Icon = pillar.icon;
               return (
                 <div
                   key={index}
-                  className="group relative p-8 rounded-lg bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-3 hover:scale-105 transition-all duration-500 animate-fade-in overflow-hidden cursor-pointer"
+                  className="group relative p-6 md:p-8 rounded-lg bg-card border border-border shadow-card hover:shadow-elevated hover:-translate-y-3 hover:scale-105 transition-all duration-500 animate-fade-in overflow-hidden cursor-pointer"
                   style={{ animationDelay: `${index * 0.1 + 0.3}s` }}
                 >
                   {/* Animated background gradient */}

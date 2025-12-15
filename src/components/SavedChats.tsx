@@ -58,7 +58,7 @@ const SavedChats = () => {
               <MessageSquare className="w-5 h-5 text-accent animate-pulse" />
               <span className="text-sm font-semibold uppercase tracking-wider text-accent">Use Cases</span>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               Real Conversations, Real Results
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
@@ -67,7 +67,7 @@ const SavedChats = () => {
           </div>
 
           {/* Saved Chats Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {savedChats.map((chat, index) => {
               const Icon = chat.icon;
               return (

@@ -52,10 +52,10 @@ const Contact = () => {
       <section className="pt-32 pb-20 bg-gradient-to-br from-primary via-primary/95 to-primary/90">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6 animate-fade-in">
               Let's <span className="text-primary-foreground">Transform</span> Together
             </h1>
-            <p className="text-xl text-white/90 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-white/90 leading-relaxed px-2">
               Ready to bring Language Action Models to your organization? 
               Get in touch and let's explore how LAM13 can drive your strategic transformation.
             </p>

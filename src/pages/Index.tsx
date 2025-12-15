@@ -3,7 +3,6 @@ import Hero from "@/components/Hero";
 import WhatWeDo from "@/components/WhatWeDo";
 import VideoSection from "@/components/VideoSection";
 import SavedChats from "@/components/SavedChats";
-import TrustIndicators from "@/components/TrustIndicators";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -14,7 +13,6 @@ const Index = () => {
       <WhatWeDo />
       <VideoSection />
       <SavedChats />
-      <TrustIndicators />
       <Footer />
     </div>
   );

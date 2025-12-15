@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NavLink } from "@/components/NavLink";
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Check, X } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +11,26 @@ import { useNavigate } from "react-router-dom";
 type AuthMode = "signin" | "register";
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL
 
+// Validation helpers
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const getPasswordStrength = (password: string) => {
+  return {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /\d/.test(password),
+    hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  };
+};
+
+const isPasswordValid = (password: string): boolean => {
+  const strength = getPasswordStrength(password);
+  return Object.values(strength).every(Boolean);
+};
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -18,6 +38,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorSignIn, setErrorSignIn] = useState("");
   const [errorRegister, setErrorRegister] = useState("");
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -26,13 +47,54 @@ const Auth = () => {
     confirmPassword: "",
   });
 
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.push("Email is required");
+    } else if (!isValidEmail(formData.email)) {
+      errors.push("Please enter a valid email address");
+    }
+
+    // Password validation
+    if (!formData.password) {
+      errors.push("Password is required");
+    } else if (mode === "register" && !isPasswordValid(formData.password)) {
+      errors.push("Password does not meet requirements");
+    }
+
+    // Register-specific validations
+    if (mode === "register") {
+      if (!formData.name.trim()) {
+        errors.push("Full name is required");
+      } else if (formData.name.trim().length < 2) {
+        errors.push("Name must be at least 2 characters");
+      }
+
+      if (!formData.confirmPassword) {
+        errors.push("Please confirm your password");
+      } else if (formData.password !== formData.confirmPassword) {
+        errors.push("Passwords do not match");
+      }
+    }
+
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorSignIn("");
+    setErrorRegister("");
+    setValidationErrors([]);
 
-    // Mock submission - will be replaced with real auth later
-    console.log("Form submitted:", { mode, ...formData });
+    // Frontend validation
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      console.log(BACKEND_API_URL)
       if (mode=="signin"){
         const email = formData.email
         const password = formData.password
@@ -49,6 +111,8 @@ const Auth = () => {
           setErrorSignIn(err.detail)
         }
         else{
+          // Store user info for display
+          localStorage.setItem("lam13_user", JSON.stringify({ name: data.name || formData.email.split('@')[0], email: formData.email }));
           navigate("/try")
         }
 
@@ -56,9 +120,8 @@ const Auth = () => {
         
 }
 else if(mode=="register"){
-  const { name, email, password, confirmPassword } = formData;
+  const { name, email, password } = formData;
 
-  console.log("here")
   const res = await fetch(BACKEND_API_URL +"/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -73,16 +136,14 @@ else if(mode=="register"){
 
   }
   else{
+    // Store user info for display
+    localStorage.setItem("lam13_user", JSON.stringify({ name: name, email: email }));
     navigate("/try")
   }
 
-
-
- 
-
 }
       } catch (err) {
-        console.log(err)
+        console.error("Auth error:", err)
       }
     };
 
@@ -192,9 +253,17 @@ else if(mode=="register"){
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-          {errorRegister && mode === "register" && (
-                <div className="text-red-500 text-sm text-center mb-2">{errorRegister}</div>
-              )}
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                {validationErrors.map((error, i) => (
+                  <p key={i} className="text-destructive text-sm">{error}</p>
+                ))}
+              </div>
+            )}
+            {errorRegister && mode === "register" && (
+              <div className="text-destructive text-sm text-center mb-2">{errorRegister}</div>
+            )}
             {mode === "register" && (
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-foreground/80">
@@ -258,6 +327,27 @@ else if(mode=="register"){
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {/* Password Requirements */}
+              {mode === "register" && formData.password && (
+                <div className="mt-2 space-y-1">
+                  {[
+                    { key: 'minLength', label: 'At least 8 characters' },
+                    { key: 'hasUppercase', label: 'One uppercase letter' },
+                    { key: 'hasLowercase', label: 'One lowercase letter' },
+                    { key: 'hasNumber', label: 'One number' },
+                    { key: 'hasSpecial', label: 'One special character (!@#$%^&*)' },
+                  ].map(({ key, label }) => {
+                    const strength = getPasswordStrength(formData.password);
+                    const isValid = strength[key as keyof typeof strength];
+                    return (
+                      <div key={key} className={`flex items-center gap-2 text-xs ${isValid ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {isValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                        {label}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {mode === "register" && (

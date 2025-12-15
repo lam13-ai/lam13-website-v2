@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Hero = () => {
@@ -11,7 +11,7 @@ const Hero = () => {
           
 
           {/* Main Headline with data stream effect */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 leading-[1.1]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 md:mb-8 leading-[1.1]">
             <span className="inline-block text-foreground animate-fade-in drop-shadow-lg" style={{
             animationDelay: '0.1s'
           }}>
@@ -26,7 +26,7 @@ const Hero = () => {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed animate-fade-in" style={{
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 md:mb-12 leading-relaxed animate-fade-in px-2" style={{
           animationDelay: '0.3s'
         }}>
             Powered by <span className="font-bold text-muted-foreground">
@@ -47,10 +47,6 @@ const Hero = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-white/20 to-accent/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               </Button>
             </Link>
-            <Button variant="heroOutline" size="xl" className="group backdrop-blur-sm">
-              Explore Our Approach
-              <Sparkles className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Button>
           </div>
 
         </div>
