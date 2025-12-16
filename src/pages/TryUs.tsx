@@ -14,6 +14,39 @@ const isReport = (content: string): boolean => {
 };
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL
 
+const parseChatTextToMessages = (text: string): Message[] => {
+  try {
+    const qaPairs = JSON.parse(text); // [{ question, answer }]
+    if (!Array.isArray(qaPairs)) return [];
+
+    const messages: Message[] = [];
+
+    qaPairs.forEach((pair: any, index: number) => {
+      if (pair.question) {
+        messages.push({
+          id: `q-${index}`,
+          role: "user",
+          content: pair.question,
+          timestamp: new Date(),
+        });
+      }
+
+      if (pair.answer) {
+        messages.push({
+          id: `a-${index}`,
+          role: "assistant",
+          content: pair.answer,
+          timestamp: new Date(),
+        });
+      }
+    });
+
+    return messages;
+  } catch (e) {
+    console.error("Failed to parse chat text", e);
+    return [];
+  }
+};
 
 // Download content as a file
 const downloadAsFile = (content: string, filename: string) => {
@@ -43,6 +76,8 @@ interface Chat {
 }
 
 const TryUs = () => {
+
+  
   const [chats, setChats] = useState<Chat[]>([
     {
       id: "1",
@@ -54,15 +89,53 @@ const TryUs = () => {
   const [activeChat, setActiveChat] = useState<string>("1");
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
   // Start with sidebar closed on mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Get logged in user
-  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+  const [loggedInUser, setLoggedInUser] = useState<{ user_id:number; name: string; email: string; } | null>(null);
   
   // Check if mobile
   const [isMobile, setIsMobile] = useState(false);
+
+
+  useEffect(() => {
+    if (!loggedInUser?.user_id) return;
+  
+    const fetchChats = async () => {
+      const res = await fetch(
+        `${BACKEND_API_URL}/get_chats?user_id=${loggedInUser.user_id}`
+      );
+  
+      const data = await res.json();
+  
+      const parsedChats = data.map((chat: any) => ({
+        id: chat.chat_id,
+        title: chat.text
+          ? (() => {
+              try {
+                const parsed = JSON.parse(chat.text);
+                return parsed?.[0]?.question?.slice(0, 30) + "..." || "New conversation";
+              } catch {
+                return "New conversation";
+              }
+            })()
+          : "New conversation",
+        messages: chat.text
+          ? parseChatTextToMessages(chat.text)
+          : [],
+        createdAt: new Date(chat.created_at),
+      }));
+  
+      setChats(parsedChats);
+      setActiveChat(parsedChats[0]?.id ?? null);
+    };
+  
+    fetchChats();
+  }, [loggedInUser]);
+  
   
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -75,7 +148,9 @@ const TryUs = () => {
     const userData = localStorage.getItem("lam13_user");
     if (userData) {
       try {
+        console.log(userData)
         setLoggedInUser(JSON.parse(userData));
+  
       } catch {
         setLoggedInUser(null);
       }
@@ -122,13 +197,17 @@ const TryUs = () => {
     setIsTyping(true);
 
     try {
+      console.log(activeChat)
       const response = await fetch(BACKEND_API_URL +"/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        
         body: JSON.stringify({
           messages: [{ role: "user", content: userMessage.content }],
+          "chat_id":activeChat, 
+          "user_id":loggedInUser.user_id,
           meta: {},
         }),
       });
@@ -188,16 +267,24 @@ const TryUs = () => {
     }
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    const res = await fetch(`${BACKEND_API_URL}/chat/new`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: loggedInUser.user_id }),
+    });
+  
+    const chat = await res.json();
+  
     const newChat: Chat = {
-      id: Date.now().toString(),
+      id: chat.chat_id, // REAL UUID
       title: "New conversation",
       messages: [],
-      createdAt: new Date(),
+      createdAt: new Date(chat.created_at),
     };
+  
     setChats((prev) => [newChat, ...prev]);
-    setActiveChat(newChat.id);
-    if (isMobile) setSidebarOpen(false);
+    setActiveChat(chat.chat_id);
   };
 
   const handleSelectChat = (chatId: string) => {

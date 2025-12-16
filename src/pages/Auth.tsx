@@ -112,11 +112,10 @@ const Auth = () => {
         }
         else{
           // Store user info for display
-          localStorage.setItem("lam13_user", JSON.stringify({ name: data.name || formData.email.split('@')[0], email: formData.email }));
+          localStorage.setItem("lam13_user", JSON.stringify({user_id:data.user.id, name: data.name || formData.email.split('@')[0], email: formData.email, }));
           navigate("/try")
         }
 
-        // Save token locally
         
 }
 else if(mode=="register"){
@@ -137,7 +136,7 @@ else if(mode=="register"){
   }
   else{
     // Store user info for display
-    localStorage.setItem("lam13_user", JSON.stringify({ name: name, email: email }));
+    localStorage.setItem("lam13_user", JSON.stringify({ user_id:data.id, name: name, email: email }));
     navigate("/try")
   }
 
