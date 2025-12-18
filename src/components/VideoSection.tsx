@@ -46,7 +46,7 @@ const VideoSection = () => {
 
             {/* Coming soon badge */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-              <span className="px-4 py-2 text-sm font-semibold rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground border border-border">
+              <span className="px-4 py-2 text-sm font-semibold rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground border border-border whitespace-nowrap">
                 Video Coming Soon
               </span>
             </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, Download, X } from "lucide-react";
+import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
@@ -365,18 +365,34 @@ const TryUs = () => {
         {/* Login CTA or User Info */}
         <div className="p-4 border-t border-border/50 min-w-[280px] md:min-w-[288px]">
           {loggedInUser ? (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-accent" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    Hello, {loggedInUser.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {loggedInUser.email}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  Hello, {loggedInUser.name}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {loggedInUser.email}
-                </p>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem("lam13_user");
+                  setLoggedInUser(null);
+                  setChats([{ id: "1", title: "New conversation", messages: [], createdAt: new Date() }]);
+                  setActiveChat("1");
+                }}
+                className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
             </div>
           ) : (
             <>
@@ -415,7 +431,7 @@ const TryUs = () => {
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
               <Bot className="w-4 h-4 text-accent" />
             </div>
-            <span className="font-medium text-foreground truncate">LAM13 Agent</span>
+            <span className="font-medium text-foreground truncate">Lam13.ai</span>
           </div>
         </header>
 
@@ -427,28 +443,14 @@ const TryUs = () => {
                 <Bot className="w-8 h-8 md:w-10 md:h-10 text-accent" />
               </div>
               <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2 text-center">
-                Welcome to LAM13
+                Hello, this is Lam13 and I'm in beta testing.
               </h2>
-              <p className="text-muted-foreground text-center max-w-md mb-6 md:mb-8 text-sm md:text-base px-4">
-                Ask me anything about public sector strategy, government
-                transformation, or policy development.
+              <p className="text-muted-foreground text-center max-w-md mb-4 text-sm md:text-base px-4">
+                I can help you develop complete national strategies or a subset of them like benchmarks, KPIs or required governance.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3 max-w-2xl w-full px-4">
-                {[
-                  "How can AI transform public services?",
-                  "What are best practices for digital government?",
-                  "How to measure policy effectiveness?",
-                  "Strategies for citizen engagement",
-                ].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => setInput(suggestion)}
-                    className="px-3 md:px-4 py-2 md:py-3 rounded-xl border border-border/50 hover:border-accent/50 hover:bg-accent/5 text-left text-xs md:text-sm text-foreground/80 transition-colors"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
+              <p className="text-foreground font-medium text-center text-sm md:text-base">
+                What can I help you with today?
+              </p>
             </div>
           ) : (
             <div className="max-w-4xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
@@ -520,7 +522,7 @@ const TryUs = () => {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-sm flex-shrink-0">
+        <div className="border-t border-border/50 py-3 px-4 md:p-4 bg-background/80 backdrop-blur-sm flex-shrink-0">
           <div className="max-w-4xl mx-auto">
             <div className="flex gap-2 md:gap-3 items-end">
               <div className="flex-1 relative">
