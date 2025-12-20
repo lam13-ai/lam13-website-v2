@@ -429,25 +429,25 @@ const TryUs = () => {
                 </div>}
               <div ref={messagesEndRef} />
             </div>
-          )}
-                              {currentChat?.reportLink && (
-                        <div className="mt-6 mb-3 flex justify-center">
-                          <Button
-                            onClick={() => downloadReport(currentChat.reportLink)}
-                            className="
-                              flex items-center gap-2
-                              rounded-lg
-                              bg-accent
-                              text-accent-foreground
-                              hover:bg-accent/90
-                              px-4 py-2
-                              text-sm
-                            "
-                          >
-                            <Download className="w-4 h-4" />
-                            Download Final Report (PDF)
-                          </Button>
-                        </div>
+          }
+          {currentChat?.reportLink && (
+            <div className="mt-6 mb-3 flex justify-center">
+              <Button
+                onClick={() => downloadReport(currentChat.reportLink)}
+                className="
+                  flex items-center gap-2
+                  rounded-lg
+                  bg-accent
+                  text-accent-foreground
+                  hover:bg-accent/90
+                  px-4 py-2
+                  text-sm
+                "
+              >
+                <Download className="w-4 h-4" />
+                Download Final Report (PDF)
+              </Button>
+            </div>
 )}
         </div>
 
