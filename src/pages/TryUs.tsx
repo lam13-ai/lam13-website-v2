@@ -57,6 +57,34 @@ const downloadAsFile = (content: string, filename: string) => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
+
+
+const downloadReport = async (path: string) =>{
+  const res = await fetch(`${BACKEND_API_URL}/download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({"path": path}),
+  });
+  const blob = await res.blob();
+  console.log("RESPONSE")
+  // 2️⃣ Create temporary URL
+  const url = window.URL.createObjectURL(blob);
+  console.log(url)
+  // 3️⃣ Create invisible <a> and click it
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "report.pdf"; // filename shown to user
+  document.body.appendChild(a);
+  a.click();
+
+  // 4️⃣ Cleanup
+  a.remove();
+  window.URL.revokeObjectURL(url);
+
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -68,14 +96,21 @@ interface Chat {
   title: string;
   messages: Message[];
   createdAt: Date;
+  reportLink: string
 }
 const TryUs = () => {
-  const [chats, setChats] = useState<Chat[]>([{
-    id: "1",
-    title: "New conversation",
-    messages: [],
-    createdAt: new Date()
-  }]);
+
+  
+  const [chats, setChats] = useState<Chat[]>([
+    {
+      id: "1",
+      title: "New conversation",
+      messages: [],
+      createdAt: new Date(),
+      reportLink:""
+      
+    },
+  ]);
   const [activeChat, setActiveChat] = useState<string>("1");
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -93,23 +128,33 @@ const TryUs = () => {
 
   // Check if mobile
   const [isMobile, setIsMobile] = useState(false);
+
+  // Check Download button
+  const[downloadLink, setDownloadLink] = useState("")
+
   useEffect(() => {
     if (!loggedInUser?.user_id) return;
     const fetchChats = async () => {
       const res = await fetch(`${BACKEND_API_URL}/get_chats?user_id=${loggedInUser.user_id}`);
       const data = await res.json();
+  
       const parsedChats = data.map((chat: any) => ({
         id: chat.chat_id,
-        title: chat.text ? (() => {
-          try {
-            const parsed = JSON.parse(chat.text);
-            return parsed?.[0]?.question?.slice(0, 30) + "..." || "New conversation";
-          } catch {
-            return "New conversation";
-          }
-        })() : "New conversation",
-        messages: chat.text ? parseChatTextToMessages(chat.text) : [],
-        createdAt: new Date(chat.created_at)
+        title: chat.text
+          ? (() => {
+              try {
+                const parsed = JSON.parse(chat.text);
+                return parsed?.[0]?.question?.slice(0, 30) + "..." || "New conversation";
+              } catch {
+                return "New conversation";
+              }
+            })()
+          : "New conversation",
+        messages: chat.text
+          ? parseChatTextToMessages(chat.text)
+          : [],
+        createdAt: new Date(chat.created_at),
+        reportLink: chat.report_link ?? null,
       }));
       setChats(parsedChats);
       setActiveChat(parsedChats[0]?.id ?? null);
@@ -231,7 +276,8 @@ const TryUs = () => {
       // REAL UUID
       title: "New conversation",
       messages: [],
-      createdAt: new Date(chat.created_at)
+      createdAt: new Date(chat.created_at),
+      reportLink:""
     };
     setChats(prev => [newChat, ...prev]);
     setActiveChat(chat.chat_id);
@@ -297,17 +343,17 @@ const TryUs = () => {
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => {
-            localStorage.removeItem("lam13_user");
-            setLoggedInUser(null);
-            setChats([{
-              id: "1",
-              title: "New conversation",
-              messages: [],
-              createdAt: new Date()
-            }]);
-            setActiveChat("1");
-          }} className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem("lam13_user");
+                  setLoggedInUser(null);
+                  setChats([{ id: "1", title: "New conversation", messages: [], createdAt: new Date(), reportLink:"" }]);
+                  setActiveChat("1");
+                }}
+                className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              >
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </Button>
@@ -382,7 +428,27 @@ const TryUs = () => {
                   </div>
                 </div>}
               <div ref={messagesEndRef} />
-            </div>}
+            </div>
+          }
+          {currentChat?.reportLink && (
+            <div className="mt-6 mb-3 flex justify-center">
+              <Button
+                onClick={() => downloadReport(currentChat.reportLink)}
+                className="
+                  flex items-center gap-2
+                  rounded-lg
+                  bg-accent
+                  text-accent-foreground
+                  hover:bg-accent/90
+                  px-4 py-2
+                  text-sm
+                "
+              >
+                <Download className="w-4 h-4" />
+                Download Final Report (PDF)
+              </Button>
+            </div>
+)}
         </div>
 
         {/* Input Area */}
