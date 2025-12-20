@@ -1,12 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Hero = () => {
-  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-background via-secondary/20 to-background pt-32 pb-32">
+  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-32 pb-32">
 
       <div className="w-full px-6 relative z-10">
-        <div className="max-w-6xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center text-slate-500">
           {/* Badge with enhanced glow */}
           
 
@@ -14,22 +13,17 @@ const Hero = () => {
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 md:mb-8 leading-[1.1]">
             <span className="inline-block text-foreground animate-fade-in drop-shadow-lg" style={{
             animationDelay: '0.1s'
-          }}>
-              Strategy Consulting for
-            </span>
+          }}>AI Native Strategy Consulting</span>
             <br />
-            <span className="inline-block text-gradient-accent animate-fade-in" style={{
-            animationDelay: '0.2s'
-          }}>
-              Governments & Public Sector
-            </span>
+            
           </h1>
 
           {/* Subheadline */}
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 md:mb-12 leading-relaxed animate-fade-in px-2" style={{
           animationDelay: '0.3s'
-        }}>
-            Powered by <span className="font-bold text-muted-foreground">
+        }}>Disrupting strategy consulting
+
+through advanced agentic AI<span className="font-bold text-muted-foreground">
               Large Agentic Models (LAMs)
             </span> that turn intent into decisive action.
           </p>
@@ -41,7 +35,7 @@ const Hero = () => {
             <Link to="/try">
               <Button variant="hero" size="xl" className="group relative overflow-hidden shadow-[0_0_40px_rgba(24,209,255,0.4)] hover:shadow-[0_0_60px_rgba(24,209,255,0.6)] transition-all duration-500">
                 <span className="relative z-10 flex items-center gap-2">
-                  Try Us
+                  Get Started 
                   <ArrowRight className="group-hover:translate-x-2 transition-transform duration-300" />
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-white/20 to-accent/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />

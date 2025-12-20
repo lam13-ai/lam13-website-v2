@@ -4,6 +4,7 @@ import WhatWeDo from "@/components/WhatWeDo";
 import WhatIsLam from "@/components/WhatIsLam";
 import VideoSection from "@/components/VideoSection";
 import SavedChats from "@/components/SavedChats";
+import TeamSection from "@/components/TeamSection";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -13,8 +14,10 @@ const Index = () => {
       <Hero />
       <WhatWeDo />
       <WhatIsLam />
-      <VideoSection />
-      <SavedChats />
+      <TeamSection />
+      {/* Hidden sections - uncomment to show */}
+      {/* <VideoSection /> */}
+      {/* <SavedChats /> */}
       <Footer />
     </div>
   );

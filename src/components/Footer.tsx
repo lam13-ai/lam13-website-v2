@@ -1,76 +1,98 @@
-import logo from "@/assets/logo-white.png";
-
+import { ArrowRight, Mail, MessageCircle } from "lucide-react";
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
-  return (
-    <footer className="py-12 bg-primary text-primary-foreground">
+  return <footer className="bg-primary text-primary-foreground">
       <div className="container mx-auto px-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Main Footer Content */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            {/* Logo/Brand */}
-            <div className="text-center md:text-left flex flex-col items-center md:items-start">
-              <img src={logo} alt="LAM13 Logo" className="h-20 w-auto mb-2" />
-              <p className="text-primary-foreground/70 text-sm">
-                AI-Native Strategy Consulting
-              </p>
-            </div>
+        {/* Why LAM13 and Contact Us Section */}
+        <div className="py-16 border-b border-primary-foreground/20">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+              {/* Origin Story - Left Side */}
+              <div>
+                
+                
+                <h2 className="text-3xl md:text-4xl font-bold mb-8 text-primary-foreground">
+                  Why LAM13?
+                </h2>
+                
+                <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                  <div className="relative group flex-shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent via-accent to-accent opacity-20 rounded-2xl blur-xl group-hover:opacity-30 transition-opacity duration-500" />
+                    <div className="relative p-6 rounded-2xl bg-primary-foreground/10 border border-primary-foreground/20 text-center">
+                      <div className="text-5xl font-bold text-primary-foreground mb-2 pb-2">
+                        لامع
+                      </div>
+                      <div className="text-lg font-semibold text-primary-foreground mb-1">Lāmiʿ</div>
+                      <div className="text-sm text-primary-foreground/70">Arabic</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <ArrowRight className="w-5 h-5 text-primary-foreground flex-shrink-0 mt-1" />
+                      <div>
+                        <h3 className="text-xl font-bold text-primary-foreground mb-1">Brilliant</h3>
+                        <p className="text-sm text-primary-foreground/70">
+                          From <span className="text-primary-foreground font-semibold">Lāmiʿ (لامع)</span>, meaning "brilliant" in Arabic—representing clarity and exceptional intelligence.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <ArrowRight className="w-5 h-5 text-primary-foreground flex-shrink-0 mt-1" />
+                      <div>
+                        <h3 className="text-xl font-bold text-primary-foreground mb-1">13 Signals</h3>
+                        <p className="text-sm text-primary-foreground/70">
+                          The diverse data streams that LAMs process to generate strategic brilliance.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            {/* Navigation Links */}
-            <nav className="flex flex-wrap justify-center gap-8">
-              <a
-                href="/"
-                className="text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-              >
-                Home
-              </a>
-              <a
-                href="/about"
-                className="text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-              >
-                About
-              </a>
-              <a
-                href="/contact"
-                className="text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-              >
-                Contact
-              </a>
-              <a
-                href="/try"
-                className="text-sm text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-              >
-                Try Us
-              </a>
-            </nav>
-          </div>
+              {/* Contact Us - Right Side */}
+              <div>
+                
+                
+                <h2 className="text-3xl md:text-4xl font-bold mb-8 text-primary-foreground">
+                  Contact Us
+                </h2>
+                
+                <div className="space-y-4">
+                  {/* Email */}
+                  <a href="mailto:Joseph.boutros@lam13.ai" className="group flex items-center gap-4 p-5 rounded-2xl bg-primary-foreground/10 border border-primary-foreground/20 hover:border-primary-foreground/40 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Mail className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-primary-foreground group-hover:text-primary-foreground/80 transition-colors">Email Us</h3>
+                      <p className="text-sm text-primary-foreground/70">Joseph.boutros@lam13.ai</p>
+                    </div>
+                  </a>
 
-          {/* Divider */}
-          <div className="my-8 h-px bg-primary-foreground/20" />
-
-          {/* Bottom Bar with Legal Links */}
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-primary-foreground/60">
-            <p>© {currentYear} Lam13.ai. All rights reserved.</p>
-            <div className="flex gap-6">
-              <a
-                href="/privacy"
-                className="hover:text-primary-foreground/80 transition-colors"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="/terms"
-                className="hover:text-primary-foreground/80 transition-colors"
-              >
-                Terms & Conditions
-              </a>
+                  {/* WhatsApp */}
+                  <a href="https://wa.me/971549988326" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 p-5 rounded-2xl bg-primary-foreground/10 border border-primary-foreground/20 hover:border-primary-foreground/40 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <MessageCircle className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-primary-foreground group-hover:text-primary-foreground/80 transition-colors">WhatsApp</h3>
+                      <p className="text-sm text-primary-foreground/70">+971 54 998 8326</p>
+                    </div>
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </footer>
-  );
-};
 
+        {/* Copyright */}
+        <div className="py-8 text-center">
+          <p className="text-sm text-primary-foreground/60">
+            © 2025 Lam13.ai. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>;
+};
 export default Footer;

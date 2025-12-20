@@ -124,61 +124,6 @@ const About = () => {
         </div>
       </section>
 
-      {/* Origin of the Name */}
-      <section className="py-16 bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <span className="text-sm font-bold tracking-wider uppercase text-teal">Origin Story</span>
-              <div className="h-px bg-gradient-to-r from-teal/60 via-teal/30 to-transparent mt-3 max-w-[120px]" />
-            </div>
-            
-            <h2 className="text-4xl md:text-5xl font-bold mb-12 bg-gradient-to-r from-teal/80 via-primary to-teal/80 bg-clip-text text-transparent pb-2">
-              Why LAM13?
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
-              <div className="relative group order-2 md:order-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-teal via-accent to-teal opacity-20 rounded-3xl blur-xl group-hover:opacity-30 transition-opacity duration-500" />
-                <div className="relative p-8 sm:p-10 md:p-12 rounded-3xl bg-gradient-to-br from-card to-card/50 border border-teal/20 text-center">
-                  <div className="text-8xl font-bold bg-gradient-to-br from-teal via-accent to-teal bg-clip-text text-transparent mb-4">
-                    لامع
-                  </div>
-                  <div className="text-2xl font-semibold text-teal mb-2">Lāmiʿ</div>
-                  <div className="text-lg text-muted-foreground">Arabic</div>
-                </div>
-              </div>
-              
-              <div className="space-y-6 order-1 md:order-2">
-                <div className="flex items-start gap-4">
-                  <ArrowRight className="w-6 h-6 text-teal flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-foreground mb-2">Brilliant</h3>
-                    <p className="text-muted-foreground">
-                      The name LAM13 derives from <span className="text-teal font-semibold">Lāmiʿ (لامع)</span>,
-                      meaning "brilliant" in Arabic. It represents our commitment to clarity, 
-                      insight, and exceptional intelligence in governance.
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <ArrowRight className="w-6 h-6 text-teal flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="text-2xl font-bold text-foreground mb-2">13 Signals</h3>
-                    <p className="text-muted-foreground">
-                      The number 13 symbolizes the diverse signals and data streams that LAMs 
-                      process to generate strategic brilliance—from policy documents to citizen 
-                      feedback, economic indicators to global trends.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Meet Our Team */}
       <section className="py-20 bg-gradient-to-b from-background via-secondary/10 to-background">
         <div className="container mx-auto px-6">
