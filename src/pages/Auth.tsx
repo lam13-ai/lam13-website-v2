@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NavLink } from "@/components/NavLink";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Check, X } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/lamlogo.png";
 import { useNavigate } from "react-router-dom";
 type AuthMode = "signin" | "register";
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;

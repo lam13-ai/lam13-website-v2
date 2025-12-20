@@ -11,7 +11,7 @@ const Footer = () => {
                 
                 
                 <h2 className="text-3xl md:text-4xl font-bold mb-8 text-primary-foreground">
-                  Why LAM13?
+                  Did you Know?
                 </h2>
                 
                 <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
@@ -32,20 +32,12 @@ const Footer = () => {
                       <div>
                         <h3 className="text-xl font-bold text-primary-foreground mb-1">Brilliant</h3>
                         <p className="text-sm text-primary-foreground/70">
-                          From <span className="text-primary-foreground font-semibold">Lāmiʿ (لامع)</span>, meaning "brilliant" in Arabic—representing clarity and exceptional intelligence.
+                          From <span className="text-primary-foreground font-semibold">Lāmiʿ (لامع)</span>, meaning "brilliant" in Arabic, representing clarity and exceptional intelligence.
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-3">
-                      <ArrowRight className="w-5 h-5 text-primary-foreground flex-shrink-0 mt-1" />
-                      <div>
-                        <h3 className="text-xl font-bold text-primary-foreground mb-1">13 Signals</h3>
-                        <p className="text-sm text-primary-foreground/70">
-                          The diverse data streams that LAMs process to generate strategic brilliance.
-                        </p>
-                      </div>
-                    </div>
+                    
                   </div>
                 </div>
               </div>

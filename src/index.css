@@ -14,7 +14,7 @@ All colors MUST be HSL.
     /* Neutrals: #F5F7FA (light), #E4E6EF (muted), #6B7280 (medium gray), #333333 (dark) */
     
     /* Core Colors */
-    --background: 214 33% 97%; /* #F5F7FA - Light neutral background */
+    --background: 0 0% 100%; /* Pure white background */
     --foreground: 214 48% 20%; /* #1A2F4B - Dark navy text */
 
     --card: 0 0% 100%; /* White cards */

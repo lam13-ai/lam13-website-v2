@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink } from "./NavLink";
 import { Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/lamlogo.png";
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -40,7 +40,7 @@ const Header = () => {
             <div className="flex flex-col space-y-4">
               <NavLink to="/try" className="block" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full">
-                  Try Us
+                  Get Started
                 </Button>
               </NavLink>
             </div>

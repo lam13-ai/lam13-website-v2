@@ -1,4 +1,46 @@
-import { FileSearch, Presentation, Table } from "lucide-react";
+import { FileSearch } from "lucide-react";
+
+// Custom Excel SVG component
+const ExcelIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 32 32"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+  >
+    <title>file_type_excel2</title>
+    <path
+      d="M28.781,4.405H18.651V2.018L2,4.588V27.115l16.651,2.868V26.445H28.781A1.162,1.162,0,0,0,30,25.349V5.5A1.162,1.162,0,0,0,28.781,4.405Zm.16,21.126H18.617L18.6,23.642h2.487v-2.2H18.581l-.012-1.3h2.518v-2.2H18.55l-.012-1.3h2.549v-2.2H18.53v-1.3h2.557v-2.2H18.53v-1.3h2.557v-2.2H18.53v-2H28.941Z"
+      fill="currentColor"
+      fillRule="evenodd"
+    />
+    <rect x="22.487" y="7.439" width="4.323" height="2.2" fill="currentColor" />
+    <rect x="22.487" y="10.94" width="4.323" height="2.2" fill="currentColor" />
+    <rect x="22.487" y="14.441" width="4.323" height="2.2" fill="currentColor" />
+    <rect x="22.487" y="17.942" width="4.323" height="2.2" fill="currentColor" />
+    <rect x="22.487" y="21.443" width="4.323" height="2.2" fill="currentColor" />
+    <polygon
+      points="6.347 10.673 8.493 10.55 9.842 14.259 11.436 10.397 13.582 10.274 10.976 15.54 13.582 20.819 11.313 20.666 9.781 16.642 8.248 20.513 6.163 20.329 8.585 15.666 6.347 10.673"
+      fill="hsl(0 0% 100%)"
+      fillRule="evenodd"
+    />
+  </svg>
+);
+
+// Custom PowerPoint SVG component
+const PowerPointIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 32 32" 
+    xmlns="http://www.w3.org/2000/svg" 
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M18.536,2.321V5.184c3.4.019,7.357-.035,10.754.016.642,0,.67.568.678,1.064.054,5.942-.013,12.055.032,18-.012.234-.006,1.1-.013,1.346-.022.823-.434.859-1.257.884-.132,0-.52.006-.648.012-3.181-.016-6.362-.009-9.546-.009v3.182L2,27.134Q2,16,2,4.873L18.536,2.322" style={{fill: 'currentColor'}} />
+    <path d="M18.536,6.138h10.5v19.4h-10.5V23H26.17V21.725H18.536V20.135H26.17V18.863H18.539c0-.624,0-1.247-.006-1.87a4.467,4.467,0,0,0,3.82-.375,4.352,4.352,0,0,0,1.959-3.474c-1.4-.01-2.793-.006-4.186-.006,0-1.384.016-2.767-.029-4.148-.522.1-1.043.21-1.562.321V6.139" style={{fill: '#fff'}} />
+    <path d="M20.766,8.324a4.476,4.476,0,0,1,4.186,4.167c-1.4.016-2.793.01-4.189.01,0-1.393,0-2.787,0-4.177" style={{fill: 'currentColor'}} />
+    <path d="M7.1,10.726c1.727.083,3.82-.684,5.252.611,1.371,1.664,1.008,4.724-1.024,5.719A4.7,4.7,0,0,1,9,17.348c0,1.244-.006,2.488,0,3.731-.63-.054-1.263-.108-1.893-.159-.029-3.4-.035-6.8,0-10.2" style={{fill: '#fff'}} />
+    <path d="M8.993,12.446c.627-.029,1.4-.143,1.826.445a2.308,2.308,0,0,1,.041,2.087c-.363.655-1.183.592-1.816.668-.067-1.066-.06-2.131-.051-3.2" style={{fill: 'currentColor'}} />
+  </svg>
+);
 
 // Custom Chess Knight SVG component
 const ChessKnight = ({ className }: { className?: string }) => (
@@ -30,14 +72,14 @@ const services = [
     isActive: false
   },
   {
-    icon: Presentation,
+    icon: PowerPointIcon,
     title: "Create PowerPoint presentations",
     description: "Develop tailored PowerPoint presentations at strategy consulting level that are simple to use, follow specific templates, and easily editable",
     badge: "Under construction",
     isActive: false
   },
   {
-    icon: Table,
+    icon: ExcelIcon,
     title: "Build Excel models",
     description: "Develop specific models to support calculations in national strategies",
     badge: "Under construction",
@@ -47,17 +89,12 @@ const services = [
 
 const WhatWeDo = () => {
   return (
-    <section className="py-32 bg-background relative overflow-hidden z-20">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }} />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
-      </div>
+    <section className="py-16 md:py-20 bg-background relative overflow-hidden">
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-20 md:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               What We Do
             </h2>
@@ -67,42 +104,43 @@ const WhatWeDo = () => {
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-16 md:gap-x-6 md:gap-y-20 mt-14 md:mt-16">
             {services.map((service, index) => {
               const Icon = service.icon;
               return (
                 <div
                   key={index}
-                  className={`group relative p-6 md:p-8 rounded-lg bg-card border border-border shadow-card transition-all duration-500 animate-fade-in overflow-hidden ${
+                  className={`group relative pt-12 pb-6 px-6 md:pt-14 md:pb-8 md:px-8 rounded-lg bg-card border border-border shadow-card transition-all duration-500 animate-fade-in ${
                     service.isActive 
                       ? 'hover:shadow-elevated hover:-translate-y-3 hover:scale-105 cursor-pointer' 
                       : 'opacity-60 grayscale-[30%]'
                   }`}
                   style={{ animationDelay: `${index * 0.1 + 0.3}s` }}
                 >
-                  {/* Badge */}
-                  <div className={`absolute top-4 right-4 px-2 py-1 rounded-full text-xs font-medium ${
-                    service.isActive 
-                      ? 'bg-teal/20 text-teal' 
-                      : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {service.badge}
-                  </div>
-
                   {/* Animated background gradient */}
                   {service.isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg" />
                   )}
 
-                  {/* Icon with background - centered and bigger */}
-                  <div className="flex justify-center mb-6">
-                    <div className={`relative w-20 h-20 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                  {/* Badge and Icon container - breaking out of frame */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-12 md:-top-14 flex flex-col items-center">
+                    {/* Badge above icon */}
+                    <div className={`text-xs font-medium mb-2 ${
                       service.isActive 
-                        ? 'bg-accent/15 group-hover:bg-accent/25' 
-                        : 'bg-muted/50'
+                        ? 'text-teal' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      {service.badge}
+                    </div>
+                    
+                    {/* Icon */}
+                    <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl flex items-center justify-center transition-all duration-300 border-2 ${
+                      service.isActive 
+                        ? 'bg-card border-accent/30 group-hover:border-accent/50 shadow-lg' 
+                        : 'bg-card border-border shadow-md'
                     }`}>
                       <Icon 
-                        className={`w-10 h-10 transition-transform duration-300 ${
+                        className={`w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 ${
                           service.isActive 
                             ? 'text-accent group-hover:scale-110' 
                             : 'text-muted-foreground'
@@ -117,7 +155,7 @@ const WhatWeDo = () => {
 
                   {/* Content */}
                   <div className="relative z-10 text-center">
-                    <h3 className={`text-xl font-semibold mb-3 leading-tight transition-colors duration-300 ${
+                    <h3 className={`text-xl font-semibold mb-3 mt-4 leading-tight transition-colors duration-300 ${
                       service.isActive 
                         ? 'text-foreground group-hover:text-accent' 
                         : 'text-muted-foreground'

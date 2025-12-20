@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/lamlogo.png";
 
 // Check if a message looks like a report (longer content with structure)
 const isReport = (content: string): boolean => {
@@ -57,21 +57,21 @@ const downloadAsFile = (content: string, filename: string) => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 };
-
-
-const downloadReport = async (path: string) =>{
+const downloadReport = async (path: string) => {
   const res = await fetch(`${BACKEND_API_URL}/download`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify({"path": path}),
+    body: JSON.stringify({
+      "path": path
+    })
   });
   const blob = await res.blob();
-  console.log("RESPONSE")
+  console.log("RESPONSE");
   // 2️⃣ Create temporary URL
   const url = window.URL.createObjectURL(blob);
-  console.log(url)
+  console.log(url);
   // 3️⃣ Create invisible <a> and click it
   const a = document.createElement("a");
   a.href = url;
@@ -82,9 +82,7 @@ const downloadReport = async (path: string) =>{
   // 4️⃣ Cleanup
   a.remove();
   window.URL.revokeObjectURL(url);
-
-}
-
+};
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -96,21 +94,16 @@ interface Chat {
   title: string;
   messages: Message[];
   createdAt: Date;
-  reportLink: string
+  reportLink: string;
 }
 const TryUs = () => {
-
-  
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: "1",
-      title: "New conversation",
-      messages: [],
-      createdAt: new Date(),
-      reportLink:""
-      
-    },
-  ]);
+  const [chats, setChats] = useState<Chat[]>([{
+    id: "1",
+    title: "New conversation",
+    messages: [],
+    createdAt: new Date(),
+    reportLink: ""
+  }]);
   const [activeChat, setActiveChat] = useState<string>("1");
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -130,31 +123,25 @@ const TryUs = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   // Check Download button
-  const[downloadLink, setDownloadLink] = useState("")
-
+  const [downloadLink, setDownloadLink] = useState("");
   useEffect(() => {
     if (!loggedInUser?.user_id) return;
     const fetchChats = async () => {
       const res = await fetch(`${BACKEND_API_URL}/get_chats?user_id=${loggedInUser.user_id}`);
       const data = await res.json();
-  
       const parsedChats = data.map((chat: any) => ({
         id: chat.chat_id,
-        title: chat.text
-          ? (() => {
-              try {
-                const parsed = JSON.parse(chat.text);
-                return parsed?.[0]?.question?.slice(0, 30) + "..." || "New conversation";
-              } catch {
-                return "New conversation";
-              }
-            })()
-          : "New conversation",
-        messages: chat.text
-          ? parseChatTextToMessages(chat.text)
-          : [],
+        title: chat.text ? (() => {
+          try {
+            const parsed = JSON.parse(chat.text);
+            return parsed?.[0]?.question?.slice(0, 30) + "..." || "New conversation";
+          } catch {
+            return "New conversation";
+          }
+        })() : "New conversation",
+        messages: chat.text ? parseChatTextToMessages(chat.text) : [],
         createdAt: new Date(chat.created_at),
-        reportLink: chat.report_link ?? null,
+        reportLink: chat.report_link ?? null
       }));
       setChats(parsedChats);
       setActiveChat(parsedChats[0]?.id ?? null);
@@ -277,7 +264,7 @@ const TryUs = () => {
       title: "New conversation",
       messages: [],
       createdAt: new Date(chat.created_at),
-      reportLink:""
+      reportLink: ""
     };
     setChats(prev => [newChat, ...prev]);
     setActiveChat(chat.chat_id);
@@ -343,17 +330,18 @@ const TryUs = () => {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  localStorage.removeItem("lam13_user");
-                  setLoggedInUser(null);
-                  setChats([{ id: "1", title: "New conversation", messages: [], createdAt: new Date(), reportLink:"" }]);
-                  setActiveChat("1");
-                }}
-                className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              >
+              <Button variant="ghost" size="sm" onClick={() => {
+            localStorage.removeItem("lam13_user");
+            setLoggedInUser(null);
+            setChats([{
+              id: "1",
+              title: "New conversation",
+              messages: [],
+              createdAt: new Date(),
+              reportLink: ""
+            }]);
+            setActiveChat("1");
+          }} className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50">
                 <LogOut className="w-4 h-4" />
                 Sign Out
               </Button>
@@ -381,9 +369,7 @@ const TryUs = () => {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 text-accent" />
-            </div>
+            <img src={logo} alt="Lam13.ai" className="w-8 h-8 object-contain flex-shrink-0" />
             <span className="font-medium text-foreground truncate">Lam13.ai</span>
           </div>
         </header>
@@ -391,10 +377,8 @@ const TryUs = () => {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {currentChat?.messages.length === 0 ? <div className="h-full flex flex-col items-start md:items-center justify-center p-4 md:p-6">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-accent/20 flex items-center justify-center mb-4 md:mb-6">
-                <Bot className="w-8 h-8 md:w-10 md:h-10 text-accent" />
-              </div>
-              <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2 text-left md:text-center">Hello this is Lam13, and I'm in beta testing.</h2>
+              
+              <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2 text-left md:text-center">Hello this is Lam13, what can I do for you today?</h2>
               <p className="text-muted-foreground text-left md:text-center max-w-md mb-4 text-sm md:text-base">I am in Beta testing and I can help you develop complete national strategies or a subset of them like benchmarks, KPIs or required governance.</p>
               
             </div> : <div className="max-w-4xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
@@ -428,13 +412,9 @@ const TryUs = () => {
                   </div>
                 </div>}
               <div ref={messagesEndRef} />
-            </div>
-          }
-          {currentChat?.reportLink && (
-            <div className="mt-6 mb-3 flex justify-center">
-              <Button
-                onClick={() => downloadReport(currentChat.reportLink)}
-                className="
+            </div>}
+          {currentChat?.reportLink && <div className="mt-6 mb-3 flex justify-center">
+              <Button onClick={() => downloadReport(currentChat.reportLink)} className="
                   flex items-center gap-2
                   rounded-lg
                   bg-accent
@@ -442,13 +422,11 @@ const TryUs = () => {
                   hover:bg-accent/90
                   px-4 py-2
                   text-sm
-                "
-              >
+                ">
                 <Download className="w-4 h-4" />
                 Download Final Report (PDF)
               </Button>
-            </div>
-)}
+            </div>}
         </div>
 
         {/* Input Area */}

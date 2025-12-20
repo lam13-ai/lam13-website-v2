@@ -1,9 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
 const Terms = () => {
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
+  return <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1 pt-32 pb-16">
@@ -111,15 +109,7 @@ const Terms = () => {
               </p>
             </section>
 
-            <section>
-              <h2 className="text-2xl font-bold mb-4 text-foreground">12. Contact Information</h2>
-              <p className="mb-4">
-                If you have any questions about these Terms and Conditions, please contact us at:
-              </p>
-              <p className="font-semibold">
-                Email: legal@lam13.ai
-              </p>
-            </section>
+            
 
             <section className="pt-4 border-t border-border/20">
               <p className="text-sm text-foreground/60">
@@ -131,8 +121,6 @@ const Terms = () => {
       </main>
 
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Terms;

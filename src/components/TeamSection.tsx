@@ -5,7 +5,7 @@ import ahmadImage from "@/assets/ahmad.jpg";
 import bcgLogo from "@/assets/bcg-logo.png";
 import bainLogo from "@/assets/bain-logo.webp";
 import microsoftLogo from "@/assets/microsoft-logo.png";
-import githubLogo from "@/assets/github-logo.png";
+import githubLogo from "@/assets/github-logo-3.png";
 interface LogoImageProps {
   src: string;
   alt: string;
@@ -64,7 +64,7 @@ const TeamSection = () => {
       logo: ""
     }]
   }];
-  return <section className="py-20 bg-background">
+  return <section className="py-16 md:py-20 bg-background">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -73,9 +73,7 @@ const TeamSection = () => {
             <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent via-teal to-primary bg-clip-text text-transparent pb-2">
               Who We Are
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-4">
-              A focused group of strategists, technologists and data experts united by a vision for AI native strategy consulting
-            </p>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mt-4">Our core team consists of a focused group of strategists, technologists and data experts united by a vision for AI native strategy consulting</p>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -103,7 +101,7 @@ const TeamSection = () => {
                     
                     {/* Previous Work Logos */}
                     <div>
-                      <p className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-3">Previously at</p>
+                      <p className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-3">Relevant experience at </p>
                       <div className="flex items-center gap-3 flex-wrap">
                         {member.previousWorkLogos.map((work, i) => <div key={i} className="h-10 min-w-[88px] rounded-md bg-logo-surface px-3 py-1.5 flex items-center justify-center shadow-sm border border-border/30 text-foreground" title={work.name}>
                             {work.name === "Ericsson" ? <EricssonLogo /> : <LogoImage src={work.logo} alt={work.name} />}

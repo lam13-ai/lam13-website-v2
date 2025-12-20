@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 const Hero = () => {
-  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-32 pb-32">
+  return <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background pt-24 pb-16">
 
       <div className="w-full px-6 relative z-10">
         <div className="max-w-6xl mx-auto text-center text-slate-500">
@@ -21,11 +21,7 @@ const Hero = () => {
           {/* Subheadline */}
           <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 md:mb-12 leading-relaxed animate-fade-in px-2" style={{
           animationDelay: '0.3s'
-        }}>Disrupting strategy consulting
-
-through advanced agentic AI<span className="font-bold text-muted-foreground">
-              Large Agentic Models (LAMs)
-            </span> that turn intent into decisive action.
+        }}>Disrupting strategy consulting through advanced agentic AI
           </p>
 
           {/* Enhanced CTA Buttons */}

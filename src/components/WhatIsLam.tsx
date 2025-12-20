@@ -1,10 +1,6 @@
 import { Brain, Bot, BrainCircuit, Users, Plus, Minus } from "lucide-react";
 const WhatIsLam = () => {
-  return <section className="py-20 md:py-28 bg-background relative overflow-hidden">
-      {/* Subtle background accent */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-accent rounded-full blur-3xl" />
-      </div>
+  return <section className="py-16 md:py-20 bg-background relative overflow-hidden">
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         {/* Section Header */}
@@ -30,7 +26,7 @@ const WhatIsLam = () => {
 
         {/* Methodologies Section */}
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-8 animate-fade-in" style={{
+          <div className="flex items-center gap-4 mb-12 md:mb-16 animate-fade-in" style={{
           animationDelay: "0.4s"
         }}>
             <div className="flex-1 h-px bg-border" />
@@ -74,11 +70,18 @@ const WhatIsLam = () => {
               </ul>
             </div>
 
-            {/* Highlighted container for Multi-agent and LAM */}
-            <div className="lg:col-span-2 bg-gradient-to-br from-accent/10 to-primary/5 rounded-2xl p-4 md:p-6 border border-accent/30 animate-fade-in" style={{
+            <div className="lg:col-span-2 mt-8 lg:mt-0 bg-secondary/30 rounded-2xl p-4 md:p-6 border-2 border-border relative animate-fade-in" style={{
             animationDelay: "0.6s"
           }}>
-              <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full">
+              {/* Top border with centered text */}
+              <div className="absolute -top-4 left-0 right-0 flex items-center justify-center px-4 md:px-6">
+                <div className="hidden md:block flex-1 h-0.5 bg-border" />
+                <span className="px-3 md:px-6 text-xs sm:text-sm md:text-base font-semibold text-accent text-center leading-tight">
+                  Patented methodology maximizes the advantages of both
+                </span>
+                <div className="hidden md:block flex-1 h-0.5 bg-border" />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full pt-4">
                 {/* Multi-agent collaboration */}
                 <div className="bg-background/50 rounded-xl p-5 md:p-6 border border-border/30">
                   <div className="flex items-center gap-3 mb-4">
