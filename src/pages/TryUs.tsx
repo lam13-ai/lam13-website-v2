@@ -61,6 +61,33 @@ const downloadAsFile = (content: string, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
+
+const downloadReport = async (path: string) =>{
+  const res = await fetch(`${BACKEND_API_URL}/download`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({"path": path}),
+  });
+  const blob = await res.blob();
+  console.log("RESPONSE")
+  // 2️⃣ Create temporary URL
+  const url = window.URL.createObjectURL(blob);
+  console.log(url)
+  // 3️⃣ Create invisible <a> and click it
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "report.pdf"; // filename shown to user
+  document.body.appendChild(a);
+  a.click();
+
+  // 4️⃣ Cleanup
+  a.remove();
+  window.URL.revokeObjectURL(url);
+
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -73,6 +100,7 @@ interface Chat {
   title: string;
   messages: Message[];
   createdAt: Date;
+  reportLink: string
 }
 
 const TryUs = () => {
@@ -84,6 +112,8 @@ const TryUs = () => {
       title: "New conversation",
       messages: [],
       createdAt: new Date(),
+      reportLink:""
+      
     },
   ]);
   const [activeChat, setActiveChat] = useState<string>("1");
@@ -100,6 +130,8 @@ const TryUs = () => {
   // Check if mobile
   const [isMobile, setIsMobile] = useState(false);
 
+  // Check Download button
+  const[downloadLink, setDownloadLink] = useState("")
 
   useEffect(() => {
     if (!loggedInUser?.user_id) return;
@@ -110,6 +142,7 @@ const TryUs = () => {
       );
   
       const data = await res.json();
+      console.log(data)
   
       const parsedChats = data.map((chat: any) => ({
         id: chat.chat_id,
@@ -127,6 +160,7 @@ const TryUs = () => {
           ? parseChatTextToMessages(chat.text)
           : [],
         createdAt: new Date(chat.created_at),
+        reportLink: chat.report_link ?? null,
       }));
   
       setChats(parsedChats);
@@ -215,13 +249,15 @@ const TryUs = () => {
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-
+      
       const responseText = await response.text();
+      console.log(responseText)
       
       // Try to parse as JSON, otherwise use as plain text
       let assistantContent: string;
       try {
         const data = JSON.parse(responseText);
+        console.log(data)
         assistantContent = data.choices?.[0]?.message?.content 
           || data.message?.content 
           || data.content 
@@ -281,6 +317,7 @@ const TryUs = () => {
       title: "New conversation",
       messages: [],
       createdAt: new Date(chat.created_at),
+      reportLink:""
     };
   
     setChats((prev) => [newChat, ...prev]);
@@ -385,7 +422,7 @@ const TryUs = () => {
                 onClick={() => {
                   localStorage.removeItem("lam13_user");
                   setLoggedInUser(null);
-                  setChats([{ id: "1", title: "New conversation", messages: [], createdAt: new Date() }]);
+                  setChats([{ id: "1", title: "New conversation", messages: [], createdAt: new Date(), reportLink:"" }]);
                   setActiveChat("1");
                 }}
                 className="w-full gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -474,20 +511,7 @@ const TryUs = () => {
                     }`}
                   >
                     <p className="text-xs md:text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    {message.role === "assistant" && isReport(message.content) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => downloadAsFile(
-                          message.content,
-                          `LAM13-Report-${new Date(message.timestamp).toISOString().split('T')[0]}.md`
-                        )}
-                        className="mt-2 md:mt-3 gap-2 text-accent hover:text-accent hover:bg-accent/10 h-7 md:h-8 px-2 md:px-3 text-xs md:text-sm"
-                      >
-                        <Download className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                        Download Report
-                      </Button>
-                    )}
+
                   </div>
                   {message.role === "user" && (
                     <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
@@ -519,6 +543,25 @@ const TryUs = () => {
               <div ref={messagesEndRef} />
             </div>
           )}
+                              {currentChat?.reportLink && (
+                        <div className="mt-6 mb-3 flex justify-center">
+                          <Button
+                            onClick={() => downloadReport(currentChat.reportLink)}
+                            className="
+                              flex items-center gap-2
+                              rounded-lg
+                              bg-accent
+                              text-accent-foreground
+                              hover:bg-accent/90
+                              px-4 py-2
+                              text-sm
+                            "
+                          >
+                            <Download className="w-4 h-4" />
+                            Download Final Report (PDF)
+                          </Button>
+                        </div>
+)}
         </div>
 
         {/* Input Area */}
