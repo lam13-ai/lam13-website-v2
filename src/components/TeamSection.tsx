@@ -64,10 +64,10 @@ const TeamSection = () => {
       logo: ""
     }]
   }];
-  return <section className="py-16 md:py-20 bg-background">
+  return <section className="py-10 md:py-20 bg-background">
       <div className="container mx-auto px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 md:mb-16">
             
             
             <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-accent via-teal to-primary bg-clip-text text-transparent pb-2">

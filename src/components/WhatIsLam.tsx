@@ -1,10 +1,10 @@
 import { Brain, Bot, BrainCircuit, Users, Plus, Minus } from "lucide-react";
 const WhatIsLam = () => {
-  return <section className="py-16 md:py-20 bg-background relative overflow-hidden">
+  return <section className="py-10 md:py-20 bg-background relative overflow-hidden">
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-8 md:mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{
           animationDelay: "0.1s"
         }}>
@@ -18,7 +18,7 @@ const WhatIsLam = () => {
         </div>
 
         {/* Definition Card */}
-        <div className="max-w-4xl mx-auto mb-12 md:mb-16 animate-fade-in" style={{
+        <div className="max-w-4xl mx-auto mb-8 md:mb-16 animate-fade-in" style={{
         animationDelay: "0.3s"
       }}>
           
@@ -26,7 +26,7 @@ const WhatIsLam = () => {
 
         {/* Methodologies Section */}
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-12 md:mb-16 animate-fade-in" style={{
+          <div className="flex items-center gap-4 mb-8 md:mb-16 animate-fade-in" style={{
           animationDelay: "0.4s"
         }}>
             <div className="flex-1 h-px bg-border" />
@@ -70,18 +70,18 @@ const WhatIsLam = () => {
               </ul>
             </div>
 
-            <div className="lg:col-span-2 mt-8 lg:mt-0 bg-secondary/30 rounded-2xl p-4 md:p-6 border-2 border-border relative animate-fade-in" style={{
+            <div className="lg:col-span-2 mt-14 lg:mt-0 bg-secondary/30 rounded-2xl p-4 md:p-6 border-2 border-border relative animate-fade-in" style={{
             animationDelay: "0.6s"
           }}>
               {/* Top border with centered text */}
-              <div className="absolute -top-4 left-0 right-0 flex items-center justify-center px-4 md:px-6">
+              <div className="absolute -top-10 md:-top-7 left-0 right-0 flex items-center justify-center px-2 md:px-6">
                 <div className="hidden md:block flex-1 h-0.5 bg-border" />
-                <span className="px-3 md:px-6 text-xs sm:text-sm md:text-base font-semibold text-accent text-center leading-tight">
+                <span className="px-2 md:px-6 text-base md:text-lg font-semibold text-accent text-center leading-tight">
                   Patented methodology maximizes the advantages of both
                 </span>
                 <div className="hidden md:block flex-1 h-0.5 bg-border" />
               </div>
-              <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full pt-4">
+              <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full pt-6 md:pt-4">
                 {/* Multi-agent collaboration */}
                 <div className="bg-background/50 rounded-xl p-5 md:p-6 border border-border/30">
                   <div className="flex items-center gap-3 mb-4">
@@ -141,7 +141,7 @@ const WhatIsLam = () => {
         </div>
 
         {/* Bottom Insight */}
-        <div className="max-w-3xl mx-auto mt-12 md:mt-16 text-center animate-fade-in" style={{
+        <div className="max-w-3xl mx-auto mt-8 md:mt-16 text-center animate-fade-in" style={{
         animationDelay: "0.8s"
       }}>
           

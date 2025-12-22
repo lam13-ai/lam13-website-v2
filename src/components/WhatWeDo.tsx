@@ -89,12 +89,12 @@ const services = [
 
 const WhatWeDo = () => {
   return (
-    <section className="py-16 md:py-20 bg-background relative overflow-hidden">
+    <section className="py-10 md:py-20 bg-background relative overflow-hidden">
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
-          <div className="text-center mb-20 md:mb-24">
+          <div className="text-center mb-12 md:mb-24">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               What We Do
             </h2>
@@ -104,7 +104,7 @@ const WhatWeDo = () => {
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-16 md:gap-x-6 md:gap-y-20 mt-14 md:mt-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-6 md:gap-y-20 mt-10 md:mt-16">
             {services.map((service, index) => {
               const Icon = service.icon;
               return (
