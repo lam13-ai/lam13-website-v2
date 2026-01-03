@@ -1,7 +1,9 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
 const Privacy = () => {
-  return <div className="min-h-screen flex flex-col bg-background">
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1 pt-32 pb-16">
@@ -94,12 +96,22 @@ const Privacy = () => {
               </p>
             </section>
 
-            
+            <section>
+              <h2 className="text-2xl font-bold mb-4 text-foreground">9. Contact Us</h2>
+              <p className="mb-4">
+                If you have any questions about this Privacy Policy or our privacy practices, please contact us at:
+              </p>
+              <p className="font-semibold">
+                Email: privacy@lam13.ai
+              </p>
+            </section>
           </div>
         </div>
       </main>
 
       <Footer />
-    </div>;
+    </div>
+  );
 };
+
 export default Privacy;
