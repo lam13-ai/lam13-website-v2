@@ -1,0 +1,30 @@
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - gui-changes
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy_job:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Job
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build And Deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: f488b4dd39287c26b8b53348baba2e3cecf9e28621d7f7868a431e7ddc56e95103-f4b5de19-e955-4545-899a-38da4f6e6cc700f16060b70b410f
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "/"
+          api_location: ""
+          output_location: "dist"
+        env:
+          VITE_BACKEND_API_URL: "https://func-eshmun-step1.azurewebsites.net"
+          VITE_STEP2_API_URL: "https://eshmun-step2.yellowwave-b58c3cc7.swedencentral.azurecontainerapps.io"
+          VITE_STEP2_WS_URL: "wss://eshmun-step2.yellowwave-b58c3cc7.swedencentral.azurecontainerapps.io"
+          VITE_DEBUG: "true"
