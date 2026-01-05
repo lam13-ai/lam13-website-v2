@@ -260,6 +260,11 @@ const removeDataBlock = (text: string): string => {
 // Parse research request from response
 const parseResearchRequest = (text: string): any | null => {
   console.log('[RESEARCH-PARSE] Checking text for RESEARCH_REQUEST, length:', text.length);
+  // If __STEP6_START__ is present, research already happened - don't trigger again
+  if (text.includes('__STEP6_START__')) {
+    console.log('[RESEARCH-PARSE] __STEP6_START__ found, skipping (already processed)');
+    return null;
+  }
   const markers = ["RESEARCH_REQUEST:", "\nRESEARCH_REQUEST:", "\n\nRESEARCH_REQUEST:"];
   for (const marker of markers) {
     const pos = text.indexOf(marker);
@@ -406,6 +411,7 @@ const TryUs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const step6IntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isThinkingActiveRef = useRef(false);
 
   // Report generation progress
   const [isGenerating, setIsGenerating] = useState(false);
@@ -828,6 +834,11 @@ const TryUs = () => {
           console.log('[SSE-DATA]:', JSON.stringify(content), 'codes:', content.split('').map(c => c.charCodeAt(0)).join(','));
           
           if (content.startsWith('thinking:')) {
+            // Clear fake progress interval when real progress arrives
+            if (step6IntervalRef.current) {
+              clearInterval(step6IntervalRef.current);
+              step6IntervalRef.current = null;
+            }
             setThinkingText(content.slice(9).trim());
             return;
           }
@@ -835,8 +846,16 @@ const TryUs = () => {
           // Check for Step6 start marker
           if (content.includes('__STEP6_START__')) {
             debug('[STEP6] Detected STEP6_START marker, showing thinking');
+            isThinkingActiveRef.current = true;
             startStep6Analysis({});
             return;
+          }
+          
+          // Clear thinking when actual content arrives (not thinking messages)
+          if (isThinkingActiveRef.current) {
+            isThinkingActiveRef.current = false;
+            setThinkingText("");
+            setIsThinkingExpanded(false);
           }
 
           // Handle special formatting tokens from OpenAI
@@ -1117,6 +1136,13 @@ const TryUs = () => {
           if (content.startsWith("thinking:")) {
             setThinkingText(content.slice(9).trim());
             return;
+          }
+          
+          // Clear thinking when actual content arrives
+          if (isThinkingActiveRef.current) {
+            isThinkingActiveRef.current = false;
+            setThinkingText("");
+            setIsThinkingExpanded(false);
           }
 
           // Handle special formatting tokens from OpenAI
