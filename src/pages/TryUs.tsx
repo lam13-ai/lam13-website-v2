@@ -999,7 +999,7 @@ const TryUs = () => {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Our servers are currently overloaded since we are in a beta-launch, please try again.",
+        content: "Our servers are currently overloaded since we are in beta testing. Please click the regenerate button or try again later.",
         timestamp: new Date(),
       };
 
