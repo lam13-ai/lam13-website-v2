@@ -122,31 +122,30 @@ const WhatWeDo = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/0 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg" />
                   )}
 
-                  {/* Badge and Icon container - breaking out of frame */}
-                  <div className="absolute left-1/2 -translate-x-1/2 -top-12 md:-top-14 flex flex-col items-center">
-                    {/* Badge above icon */}
-                    <div className={`text-xs font-medium mb-2 ${
-                      service.isActive 
-                        ? 'text-teal' 
-                        : 'text-muted-foreground'
-                    }`}>
-                      {service.badge}
-                    </div>
-                    
-                    {/* Icon */}
-                    <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl flex items-center justify-center transition-all duration-300 border-2 ${
+                  {/* Icon container - breaking out of frame */}
+                  <div className="absolute left-1/2 -translate-x-1/2 -top-10 md:-top-12 flex flex-col items-center">
+                    {/* Icon with badge inside */}
+                    <div className={`relative w-20 h-20 md:w-24 md:h-24 rounded-xl flex flex-col items-center justify-center gap-1 py-2 transition-all duration-300 border-2 ${
                       service.isActive 
                         ? 'bg-card border-accent/30 group-hover:border-accent/50 shadow-lg' 
                         : 'bg-card border-border shadow-md'
                     }`}>
                       <Icon 
-                        className={`w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 ${
+                        className={`w-7 h-7 md:w-9 md:h-9 transition-transform duration-300 ${
                           service.isActive 
                             ? 'text-accent group-hover:scale-110' 
                             : 'text-muted-foreground'
                         }`} 
                         strokeWidth={1.5} 
                       />
+                      {/* Badge under icon */}
+                      <div className={`text-[9px] md:text-[10px] font-medium text-center leading-tight ${
+                        service.isActive 
+                          ? 'text-teal' 
+                          : 'text-muted-foreground'
+                      }`}>
+                        {service.badge}
+                      </div>
                       {service.isActive && (
                         <div className="absolute inset-0 bg-accent/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       )}
