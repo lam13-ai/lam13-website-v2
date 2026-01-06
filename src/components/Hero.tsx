@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 const Hero = () => {
-  return <section className="relative min-h-[60vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-background pt-16 pb-6 md:pt-24 md:pb-16">
+  return <section className="relative min-h-[60vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-background pt-24 pb-6 md:pt-24 md:pb-16">
 
       <div className="w-full px-6 relative z-10">
         <div className="max-w-6xl mx-auto text-center text-slate-500">
@@ -25,16 +25,18 @@ const Hero = () => {
           </p>
 
           {/* Enhanced CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in" style={{
+          <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center animate-fade-in" style={{
           animationDelay: '0.4s'
         }}>
-            <Link to="/try">
+            <Link to="/auth">
               <Button variant="hero" size="xl" className="group relative overflow-hidden shadow-[0_0_40px_rgba(24,209,255,0.4)] hover:shadow-[0_0_60px_rgba(24,209,255,0.6)] transition-all duration-500">
-                <span className="relative z-10 flex items-center gap-2">
-                  Get Started 
-                  <ArrowRight className="group-hover:translate-x-2 transition-transform duration-300" />
-                </span>
+                <span className="relative z-10">Sign In</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-accent/0 via-white/20 to-accent/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              </Button>
+            </Link>
+            <Link to="/try">
+              <Button variant="heroOutline" size="xl" className="group relative overflow-hidden transition-all duration-500">
+                <span className="relative z-10">Test Try</span>
               </Button>
             </Link>
           </div>
