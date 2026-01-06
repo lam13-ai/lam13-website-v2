@@ -176,21 +176,15 @@ else if(mode=="register"){
             <img src={logo} alt="LAM13" className="h-16 w-auto brightness-0 invert" />
           </NavLink>
 
-          <h1 className="text-4xl font-bold mb-4 leading-tight text-white">
-            Experience the Future of
-            <br />
-            <span className="text-white">Strategic Intelligence</span>
+          <h1 className="text-4xl font-bold mb-8 leading-tight text-white">
+            Sign in to Lam13.ai
           </h1>
-
-          <p className="text-lg text-white/80 max-w-md mb-8">
-            Access AI-powered insights for public sector strategy and government transformation.
-          </p>
 
           <div className="space-y-4">
             {[
-              "Unlimited conversations with our AI agents",
-              "Save and organize your strategic insights",
-              "Access exclusive governance frameworks",
+              "Conduct multi-chats and generate multiple reports simultaneously",
+              "Access previous reports in chat history",
+              "Be the first to try our upcoming products",
             ].map((feature, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">

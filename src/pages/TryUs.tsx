@@ -458,15 +458,19 @@ const TryUs = () => {
     }
   };
 
-  // Start with sidebar closed on mobile
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Initialize mobile state immediately from window to prevent flicker
+  const [isMobile, setIsMobile] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  
+  // Start with sidebar closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : false
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get logged in user
   const [loggedInUser, setLoggedInUser] = useState<{ user_id:number; name: string; email: string; } | null>(null);
-
-  // Check if mobile
-  const [isMobile, setIsMobile] = useState(false);
 
 
   useEffect(() => {
@@ -1319,6 +1323,25 @@ const TryUs = () => {
           </Button>
         </div>
 
+        {/* User Info - Moved to top */}
+        <div className="px-3 pb-2 min-w-[280px] md:min-w-[288px]">
+          {loggedInUser ? (
+            <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-200/50 cursor-pointer">
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                <User className="w-4 h-4 text-gray-600" />
+              </div>
+              <span className="text-sm text-gray-700 truncate">{loggedInUser.name}</span>
+            </div>
+          ) : (
+            <Link to="/auth" className="block">
+              <Button className="w-full bg-[#1A2F4B] hover:bg-[#1A2F4B]/90 text-white">
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign in
+              </Button>
+            </Link>
+          )}
+        </div>
+
         {/* New Chat & Search */}
         <div className="px-3 space-y-1 min-w-[280px] md:min-w-[288px]">
           <button
@@ -1407,26 +1430,6 @@ const TryUs = () => {
           </div>
         </div>
 
-        {/* User Info */}
-        <div className="p-3 border-t border-gray-200 min-w-[280px] md:min-w-[288px]">
-          {loggedInUser ? (
-            <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-200/50 cursor-pointer">
-              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                <User className="w-4 h-4 text-gray-600" />
-              </div>
-              <span className="text-sm text-gray-700 truncate">{loggedInUser.name}</span>
-            </div>
-          ) : (
-            <Link to="/auth">
-              <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-200/50 cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                  <LogIn className="w-4 h-4 text-gray-500" />
-                </div>
-                <span className="text-sm text-gray-600">Sign in</span>
-              </div>
-            </Link>
-          )}
-        </div>
       </aside>
 
       {/* Main Chat Area */}
@@ -1441,10 +1444,10 @@ const TryUs = () => {
           >
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-2 min-w-0">
+          <Link to="/" className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
             <img src={logo} alt="Lam13.ai" className="w-8 h-8 object-contain flex-shrink-0" />
             <span className="font-medium text-foreground truncate">Lam13.ai</span>
-          </div>
+          </Link>
         </header>
 
         {/* Messages Area */}
