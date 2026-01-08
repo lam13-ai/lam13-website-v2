@@ -1500,7 +1500,7 @@ const TryUs = () => {
                       )}
                       {message.role === "assistant" && loggedInUser && message.id === currentChat?.messages[currentChat.messages.length - 1]?.id && currentChat?.is_ready && currentChat?.report_link && (
                         <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                          <p className="text-sm text-green-700 dark:text-green-300 mb-2">✓ Your report is ready and has been sent to your email!</p>
+                          <p className="text-sm text-green-700 dark:text-green-300 mb-2">✓ Your report is ready and a notification has been sent to your email!</p>
                           <Button
                             variant="default"
                             size="sm"
