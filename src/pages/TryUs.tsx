@@ -1286,7 +1286,7 @@ const TryUs = () => {
   };
 
   return (
-    <div className="h-screen flex bg-background relative">
+    <div className="h-[100dvh] flex bg-background relative overflow-hidden">
       {/* Mobile Overlay */}
       {sidebarOpen && isMobile && (
         <div
@@ -1433,7 +1433,7 @@ const TryUs = () => {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {/* Top Bar */}
         <header className="h-14 md:h-16 border-b border-border/50 flex items-center px-3 md:px-4 gap-3 md:gap-4 bg-background/80 backdrop-blur-sm flex-shrink-0">
           <Button
@@ -1451,7 +1451,7 @@ const TryUs = () => {
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {currentChat?.messages.length === 0 ? (
             <div className="h-full flex flex-col items-start md:items-center justify-center p-4 md:p-6">
               <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2 text-left md:text-center">
@@ -1513,8 +1513,18 @@ const TryUs = () => {
                         </div>
                       )}
                     </div>
-                    {message.role === "assistant" && (
-                      <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {message.role === "assistant" && (() => {
+                      const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") || 
+                                             message.content.toLowerCase().includes("our servers are overloaded") || 
+                                             message.content.toLowerCase().includes("please try again");
+                      const isEmptyResponse = message.content.trim() === "";
+                      const showAlways = (isErrorMessage || isEmptyResponse) && isLastAssistantMessage;
+                      return (
+                      <div className={`flex items-center gap-1 mt-2 transition-opacity duration-200 ${
+                        showAlways 
+                          ? "opacity-100" 
+                          : "opacity-0 group-hover:opacity-100"
+                      }`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -1571,13 +1581,9 @@ const TryUs = () => {
                           </Button>
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
-                  {message.role === "user" && (
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
-                      <User className="w-3.5 h-3.5 md:w-4 md:h-4 text-foreground/70" />
-                    </div>
-                  )}
                 </div>
                 );
               })}
@@ -1644,7 +1650,7 @@ const TryUs = () => {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-sm flex-shrink-0">
+        <div className="border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-sm flex-shrink-0 sticky bottom-0">
           <div className="max-w-4xl mx-auto">
             <div className="flex gap-2 md:gap-3 items-stretch h-[52px] md:h-[56px]">
               <div className="flex-1 relative h-full">
@@ -1672,7 +1678,7 @@ const TryUs = () => {
             </div>
             {!loggedInUser && (
               <p className="text-[10px] md:text-xs text-muted-foreground text-center mt-2 md:mt-3">
-                This is a demo. Sign in to save conversations and unlock full
+                We're in beta testing. Sign in to save conversations and unlock full
                 capabilities.
               </p>
             )}

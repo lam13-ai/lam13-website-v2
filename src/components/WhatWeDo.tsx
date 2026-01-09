@@ -89,7 +89,7 @@ const services = [
 
 const WhatWeDo = () => {
   return (
-    <section className="py-10 md:py-20 bg-background relative overflow-hidden">
+    <section className="py-10 md:pt-0 md:pb-20 bg-background relative overflow-hidden">
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-7xl mx-auto">

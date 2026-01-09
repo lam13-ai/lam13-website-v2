@@ -81,7 +81,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="py-8 text-center">
           <p className="text-sm text-primary-foreground/60">
-            © 2025 Lam13.ai. All rights reserved.
+            © 2026 Lam13.ai. All rights reserved.
           </p>
         </div>
       </div>

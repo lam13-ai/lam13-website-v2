@@ -8,7 +8,7 @@ const WhatIsLam = () => {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 animate-fade-in" style={{
           animationDelay: "0.1s"
         }}>
-            How we do it
+            How We Do It
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{
           animationDelay: "0.2s"
@@ -78,11 +78,11 @@ const WhatIsLam = () => {
           }} className="mt-24 lg:mt-0 bg-white rounded-2xl p-3 md:p-4 border-2 border-border relative animate-fade-in">
               {/* Top border with centered text */}
               <div className="absolute -top-16 md:-top-8 left-0 right-0 flex items-center justify-center px-2 md:px-6">
-                <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40" />
+                <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40 mb-4" />
                 <span className="px-2 md:px-6 text-sm md:text-base lg:text-lg font-semibold text-accent text-center leading-tight bg-background mb-4">
                   Patented methodology maximizes the advantages of both
                 </span>
-                <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40" />
+                <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40 mb-4" />
               </div>
               <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full">
                 {/* Multi-agent collaboration */}
