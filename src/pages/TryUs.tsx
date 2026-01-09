@@ -1518,11 +1518,11 @@ const TryUs = () => {
                                              message.content.toLowerCase().includes("our servers are overloaded") || 
                                              message.content.toLowerCase().includes("please try again");
                       const isEmptyResponse = message.content.trim() === "";
-                      const showAlwaysOnMobile = (isErrorMessage || isEmptyResponse) && isLastAssistantMessage;
+                      const showAlways = (isErrorMessage || isEmptyResponse) && isLastAssistantMessage;
                       return (
                       <div className={`flex items-center gap-1 mt-2 transition-opacity duration-200 ${
-                        showAlwaysOnMobile 
-                          ? "opacity-100 md:opacity-0 md:group-hover:opacity-100" 
+                        showAlways 
+                          ? "opacity-100" 
                           : "opacity-0 group-hover:opacity-100"
                       }`}>
                         <Button

@@ -33,7 +33,7 @@ const TeamSection = () => {
   const teamMembers = [{
     name: "Joseph Boutros",
     role: "Founder & CEO",
-    description: "Shaping our pathway towards AI native strategy consulting. Brings deep top-tier market experience and thought leader of our agentic AI patent.",
+    description: "Shaping our vision towards AI native strategy consulting. Brings deep top-tier strategy consulting experience and is the thought leader behind our agentic AI patent.",
     image: josephImage,
     linkedIn: "https://www.linkedin.com/in/josephboutros/",
     previousWorkLogos: [{
@@ -46,7 +46,7 @@ const TeamSection = () => {
   }, {
     name: "Tobias Tschuemperlin",
     role: "Technical Advisor",
-    description: "Architecturing our AI structure with a focus on scalability, cost effectiveness, and government compliance.",
+    description: "Architecting our AI-native structure with a strong focus on scalability, cost effectiveness, and adaptability.",
     image: tobiasImage,
     linkedIn: "https://www.linkedin.com/in/tobias-tsch%C3%BCmperlin-692b04a4/",
     previousWorkLogos: [{
