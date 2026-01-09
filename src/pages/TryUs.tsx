@@ -1514,7 +1514,8 @@ const TryUs = () => {
                       )}
                     </div>
                     {message.role === "assistant" && (() => {
-                      const isErrorMessage = message.content.toLowerCase().includes("our servers are overloaded") || 
+                      const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") || 
+                                             message.content.toLowerCase().includes("our servers are overloaded") || 
                                              message.content.toLowerCase().includes("please try again");
                       const isEmptyResponse = message.content.trim() === "";
                       const showAlwaysOnMobile = (isErrorMessage || isEmptyResponse) && isLastAssistantMessage;
