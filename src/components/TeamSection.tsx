@@ -84,7 +84,7 @@ const TeamSection = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-teal/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <div className="relative rounded-2xl bg-gradient-to-br from-card to-card/50 border border-border/50 group-hover:border-accent/30 transition-all duration-500 h-full overflow-hidden">
-                  <div className="p-6">
+                  <div className="p-6 h-full flex flex-col">
                     {/* Profile Image */}
                     {member.image && <div className="w-full aspect-square rounded-xl overflow-hidden mb-4 border-2 border-accent/30">
                         <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
@@ -107,9 +107,9 @@ const TeamSection = () => {
                       {member.description}
                     </p>
                     
-                    {/* Previous Work Logos */}
+                    {/* Previous Work Logos - pushed to bottom */}
                     {member.previousWorkLogos.length > 0 && (
-                      <div>
+                      <div className="mt-auto">
                         <p className="text-xs font-semibold text-foreground/60 uppercase tracking-wider mb-3">Relevant experience at</p>
                         <div className="flex items-center gap-3 flex-wrap">
                           {member.previousWorkLogos.map((work, i) => <div key={i} className="h-10 min-w-[88px] rounded-md px-3 py-1.5 flex items-center justify-center text-foreground" title={work.name}>

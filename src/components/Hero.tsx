@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 const Hero = () => {
-  return <section className="relative min-h-[60vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-background pt-24 pb-6 md:pt-24 md:pb-16">
+  return <section className="relative min-h-[60vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-background pt-24 pb-6 md:pt-16 md:pb-8">
 
       <div className="w-full px-6 relative z-10">
         <div className="max-w-6xl mx-auto text-center text-slate-500">
