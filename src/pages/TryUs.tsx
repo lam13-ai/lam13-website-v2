@@ -1458,7 +1458,7 @@ const TryUs = () => {
                 Hello this is Lam13, what can I do for you today?
               </h2>
               <p className="text-muted-foreground text-left md:text-center max-w-md mb-4 text-sm md:text-base">
-                I am in Beta testing and I can help you develop complete national strategies or a subset of them like benchmarks, KPIs or required governance.
+                I am in Beta testing and I can help you develop complete reports for national strategies or a subset of them like benchmarks, KPIs or required governance.
               </p>
             </div>
           ) : (
