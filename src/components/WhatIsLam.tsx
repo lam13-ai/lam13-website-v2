@@ -80,7 +80,7 @@ const WhatIsLam = () => {
               <div className="absolute -top-16 md:-top-8 left-0 right-0 flex items-center justify-center px-2 md:px-6">
                 <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40 mb-4" />
                 <span className="px-2 md:px-6 text-sm md:text-base lg:text-lg font-semibold text-accent text-center leading-tight bg-background mb-4">
-                  Patented methodology maximizes the advantages of both
+                  Patented* methodology maximizes the advantages of both
                 </span>
                 <div className="hidden xl:block flex-1 h-0.5 bg-border max-w-40 mb-4" />
               </div>

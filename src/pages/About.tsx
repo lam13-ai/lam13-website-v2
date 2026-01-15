@@ -8,6 +8,15 @@ const About = () => {
   const [isQuoteVisible, setIsQuoteVisible] = useState(false);
 
   useEffect(() => {
+    document.title = "About LAM13 - AI-Native Strategy for the Public Sector | Lam13.ai";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "LAM13 is an AI-native strategy consultancy specializing in the public sector. We harness Large Agentic Models to transform how governments think, plan, and execute.");
+    }
+  }, []);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -29,7 +38,7 @@ const About = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+      <main>
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         
@@ -326,6 +335,7 @@ const About = () => {
           </div>
         </div>
       </section>
+      </main>
 
       <Footer />
     </div>

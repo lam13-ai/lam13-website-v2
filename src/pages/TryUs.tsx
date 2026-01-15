@@ -393,7 +393,15 @@ interface Chat {
 }
 
 const TryUs = () => {
-
+  // SEO meta tags
+  useEffect(() => {
+    document.title = "Try Lam13.ai - AI Strategy Consulting Demo | Lam13.ai";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Experience Lam13.ai's AI-powered strategy consulting. Develop national strategies, benchmarks, KPIs, and governance recommendations with our advanced agentic AI.");
+    }
+  }, []);
 
   const [chats, setChats] = useState<Chat[]>([
     {

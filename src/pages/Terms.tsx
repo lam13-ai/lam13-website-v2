@@ -1,7 +1,17 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const Terms = () => {
+  useEffect(() => {
+    document.title = "Terms and Conditions | Lam13.ai";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Lam13.ai Terms and Conditions. Understand your rights and responsibilities when using our AI native strategy consulting services and website.");
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />

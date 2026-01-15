@@ -37,7 +37,9 @@ const Footer = () => {
                       </div>
                     </div>
                     
-                    
+                    <p className="text-base text-primary-foreground font-medium mt-6">
+                      *Patent pending for agentic AI methodology
+                    </p>
                   </div>
                 </div>
               </div>
