@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,20 @@ const Auth = () => {
   const [errorRegister, setErrorRegister] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  useEffect(() => {
+    document.title = mode === "signin" 
+      ? "Sign In to Lam13.ai | AI Native Strategy Consulting" 
+      : "Create Account | Lam13.ai - AI Native Strategy Consulting";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", 
+        mode === "signin"
+          ? "Sign in to Lam13.ai to access your AI strategy consulting dashboard, saved chats, and reports."
+          : "Create a Lam13.ai account to save your conversations, generate multiple reports, and get early access to new features."
+      );
+    }
+  }, [mode]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",

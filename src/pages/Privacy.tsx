@@ -1,7 +1,17 @@
+import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const Privacy = () => {
+  useEffect(() => {
+    document.title = "Privacy Policy | Lam13.ai";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Lam13.ai Privacy Policy. Learn how we collect, use, and protect your personal information when you use our AI native strategy consulting services.");
+    }
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
