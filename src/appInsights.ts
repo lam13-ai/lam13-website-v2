@@ -10,13 +10,17 @@ if (sentryDsn) {
     dsn: sentryDsn,
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration(),
+      Sentry.replayIntegration({
+        maskAllText: false,
+        blockAllMedia: false,
+      }),
     ],
     tracesSampleRate: 1.0,
-    replaysSessionSampleRate: 1.0, // Capture 100% of sessions for full visibility
+    replaysSessionSampleRate: 1.0,
     replaysOnErrorSampleRate: 1.0,
     environment: import.meta.env.MODE,
   });
+  console.log('[Sentry] Initialized with Session Replay enabled');
 }
 
 // Initialize Application Insights
