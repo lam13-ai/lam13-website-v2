@@ -21,7 +21,9 @@ if (sentryDsn) {
     replaysOnErrorSampleRate: 1.0,
     environment: import.meta.env.MODE,
   });
-  console.log('[Sentry] Initialized with Session Replay enabled');
+  console.log('[Sentry] Initialized with Session Replay', { dsn: sentryDsn, env: import.meta.env.MODE });
+} else {
+  console.warn('[Sentry] DSN not configured - Session Replay disabled');
 }
 
 // Initialize Application Insights
