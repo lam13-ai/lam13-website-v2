@@ -15,14 +15,16 @@ const Footer = () => {
                 </h2>
                 
                 <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-                  <div className="relative group flex-shrink-0">
-                    <div className="absolute inset-0 bg-gradient-to-br from-accent via-accent to-accent opacity-20 rounded-2xl blur-xl group-hover:opacity-30 transition-opacity duration-500" />
-                    <div className="relative p-6 rounded-2xl bg-primary-foreground/10 border border-primary-foreground/20 text-center h-full lg:h-[184px] flex flex-col justify-center">
-                      <div className="text-5xl font-bold text-primary-foreground mb-2 pb-2">
-                        لامع
+                  <div className="flex-shrink-0">
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent via-accent to-accent opacity-20 rounded-2xl blur-xl group-hover:opacity-30 transition-opacity duration-500" />
+                      <div className="relative p-6 rounded-2xl bg-primary-foreground/10 border border-primary-foreground/20 text-center h-full lg:h-[184px] flex flex-col justify-center">
+                        <div className="text-5xl font-bold text-primary-foreground mb-2 pb-2">
+                          لامع
+                        </div>
+                        <div className="text-lg font-semibold text-primary-foreground mb-1">Lāmiʿ</div>
+                        <div className="text-sm text-primary-foreground/70">Arabic</div>
                       </div>
-                      <div className="text-lg font-semibold text-primary-foreground mb-1">Lāmiʿ</div>
-                      <div className="text-sm text-primary-foreground/70">Arabic</div>
                     </div>
                   </div>
                   
@@ -36,12 +38,12 @@ const Footer = () => {
                         </p>
                       </div>
                     </div>
-                    
-                    <p className="text-base text-primary-foreground font-medium mt-6">
-                      *Patent pending for agentic AI methodology
-                    </p>
                   </div>
                 </div>
+                
+                <p className="text-xs text-primary-foreground/60 mt-3 italic text-center md:text-left">
+                  *Patent pending for agentic AI methodology
+                </p>
               </div>
 
               {/* Contact Us - Right Side */}

@@ -42,13 +42,13 @@ const WhatIsLam = () => {
             animationDelay: "0.5s"
           }}>
               <div className="bg-secondary/30 rounded-xl p-5 md:p-6 border border-border/30 flex flex-col lg:h-[384px]">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 h-[52px] mb-4">
                   <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                     <Bot className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <h4 className="text-lg font-semibold text-foreground">Single agent</h4>
                 </div>
-                <p className="text-sm text-muted-foreground mb-6">
+                <p className="text-sm text-muted-foreground mb-6 h-[60px]">
                   Standalone agent focusing on one task for one goal.
                 </p>
                 <ul className="space-y-3 flex-1">
@@ -87,13 +87,13 @@ const WhatIsLam = () => {
               <div className="grid md:grid-cols-2 gap-4 md:gap-6 h-full">
                 {/* Multi-agent collaboration */}
                 <div className="bg-secondary/30 rounded-xl p-5 md:p-6 border border-border/30 flex flex-col lg:h-[384px]">
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 h-[52px] mb-4">
                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                       <Users className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <h4 className="text-lg font-semibold text-foreground">Multi-agent collaboration</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
+                  <p className="text-sm text-muted-foreground mb-6 h-[60px]">
                     Multiple single agents, each with their own specific task geared towards a goal, coordinating towards a bigger goal
                   </p>
                   <ul className="space-y-3 flex-1">
@@ -114,13 +114,13 @@ const WhatIsLam = () => {
 
                 {/* Large Agentic Model (LAM) */}
                 <div className="bg-secondary/30 rounded-xl p-5 md:p-6 border border-border/30 flex flex-col lg:h-[384px]">
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 h-[52px] mb-4">
                     <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
                       <BrainCircuit className="w-5 h-5 text-accent" />
                     </div>
                     <h4 className="text-lg font-semibold text-foreground">Large Agentic Model (LAM)</h4>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
+                  <p className="text-sm text-muted-foreground mb-6 h-[60px]">
                     Single model that turns powerful LLMs to goal-oriented agents capable of multi-step reasoning
                   </p>
                   <ul className="space-y-3 flex-1">
