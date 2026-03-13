@@ -32,6 +32,11 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
+                  # Add Environment Variables
+        env:
+          VITE_BACKEND_API_URL: ${{ secrets.VITE_BACKEND_API_URL }}
+          VITE_BACKEND_WS_URL: ${{ secrets.VITE_BACKEND_WS_URL }}
+          VITE_DEBUG: ${{ secrets.VITE_DEBUG }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

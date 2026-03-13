@@ -450,6 +450,11 @@ const TryUs = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [loggedInUser, setLoggedInUser] = useState<{ userId: string; name: string; email: string } | null>(null);
+  const accessToken = getAccessToken();
+
+  const getAuthHeaders = () => ({
+    Authorization: `Bearer ${getAccessToken()}`,
+  });
 
   // Cleanup WebSocket on unmount
   useEffect(() => {
@@ -524,11 +529,6 @@ const TryUs = () => {
   }, [activeChat]);
 
   const currentChat = chats.find((c) => c.id === activeChat);
-  const accessToken = getAccessToken();
-
-  const getAuthHeaders = () => ({
-    Authorization: `Bearer ${getAccessToken()}`,
-  });
 
   useEffect(() => {
     const loadConversation = async () => {
