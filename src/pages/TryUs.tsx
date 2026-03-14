@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X, Trash2, MoreHorizontal, Edit, Copy, ThumbsUp, ThumbsDown, RotateCcw, Search } from "lucide-react";
+import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X, Trash2, MoreHorizontal, Edit, Copy, ThumbsUp, ThumbsDown, RotateCcw, Search, Loader2, FileText } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -363,6 +363,13 @@ interface ChatStreamResult {
   title?: string;
 }
 
+interface UploadDocumentResult {
+  sessionId: string;
+  messageId: string;
+  message: string;
+  documentInfo?: Record<string, any>;
+}
+
 const TryUs = () => {
   // SEO meta tags
   useEffect(() => {
@@ -374,17 +381,14 @@ const TryUs = () => {
     }
   }, []);
 
-  const [chats, setChats] = useState<Chat[]>([
-    {
-      id: "1",
-      title: "New conversation",
-      messages: [],
-      createdAt: new Date(),
-    },
-  ]);
-  const [activeChat, setActiveChat] = useState<string>("1");
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChat, setActiveChat] = useState<string>("");
+  const [threadsLoaded, setThreadsLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedMessageId, setUploadedMessageId] = useState<string>("");
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [thinkingText, setThinkingText] = useState<string>("");
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -494,14 +498,33 @@ const TryUs = () => {
 
   useEffect(() => {
     const loadChatThreads = async () => {
-      if (!accessToken) return;
+      if (!accessToken) {
+        setThreadsLoaded(true);
+        return;
+      }
       try {
         const res = await fetch(`${BACKEND_API_URL}/chat/`, {
           headers: getAuthHeaders(),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setThreadsLoaded(true);
+          return;
+        }
         const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) return;
+        if (!Array.isArray(data) || data.length === 0) {
+          const fallbackId = createSessionId();
+          setChats([
+            {
+              id: fallbackId,
+              title: "New conversation",
+              messages: [],
+              createdAt: new Date(),
+            },
+          ]);
+          setActiveChat(fallbackId);
+          setThreadsLoaded(true);
+          return;
+        }
 
         const restoredChats: Chat[] = data.map((item: any) => ({
           id: item.sessionId,
@@ -515,8 +538,10 @@ const TryUs = () => {
         const storedSessionId = getActiveChatId();
         const hasStored = storedSessionId && restoredChats.some((c) => c.id === storedSessionId);
         setActiveChat(hasStored ? storedSessionId : restoredChats[0].id);
+        setThreadsLoaded(true);
       } catch (err) {
         console.error("Failed to load chat threads:", err);
+        setThreadsLoaded(true);
       }
     };
 
@@ -532,7 +557,8 @@ const TryUs = () => {
 
   useEffect(() => {
     const loadConversation = async () => {
-      if (!activeChat || !accessToken) return;
+      if (!threadsLoaded || !activeChat || !accessToken) return;
+      if (!chats.some((c) => c.id === activeChat)) return;
       try {
         const res = await fetch(`${BACKEND_API_URL}/chat/${activeChat}`, {
           headers: getAuthHeaders(),
@@ -542,7 +568,7 @@ const TryUs = () => {
         const messages: Message[] = (data.messages || [])
           .filter((m: any) => m.role === "user" || m.role === "assistant")
           .map((m: any, idx: number) => ({
-            id: `${activeChat}-${idx}`,
+            id: m.id || `${activeChat}-${idx}`,
             role: m.role,
             content: m.content,
             timestamp: new Date(),
@@ -561,7 +587,7 @@ const TryUs = () => {
     };
 
     loadConversation();
-  }, [activeChat, accessToken]);
+  }, [threadsLoaded, activeChat, accessToken, chats]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -757,9 +783,39 @@ const TryUs = () => {
     }, 5000); // 5 seconds per step
   };
 
-  const sendToBackend = async (sessionId: string, message: string) => {
+  const uploadDocumentToThread = async (sessionId: string, file: File): Promise<UploadDocumentResult> => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("message", `Uploaded document: ${file.name}`);
+
+    const response = await fetch(`${BACKEND_API_URL}/chat/${sessionId}/messages/upload`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: form,
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.detail || `Upload error: ${response.status}`);
+    }
+
+    return response.json();
+  };
+
+  const sendToBackend = async (
+    sessionId: string,
+    message: string,
+    messageId?: string,
+    uploadedMessageId?: string
+  ) => {
     const form = new FormData();
     form.append("message", message);
+    if (messageId) {
+      form.append("messageId", messageId);
+    }
+    if (uploadedMessageId) {
+      form.append("uploadedMessageId", uploadedMessageId);
+    }
     form.append("sessionId", sessionId);
 
     const response = await fetch(`${BACKEND_API_URL}/chat/`, {
@@ -776,7 +832,12 @@ const TryUs = () => {
     return response.json();
   };
 
-  const streamChatOverWebSocket = async (sessionId: string, message: string): Promise<ChatStreamResult> => {
+  const streamChatOverWebSocket = async (
+    sessionId: string,
+    message: string,
+    messageId?: string,
+    uploadedMessageId?: string
+  ): Promise<ChatStreamResult> => {
     return new Promise((resolve, reject) => {
       const token = getAccessToken();
       if (!token) {
@@ -811,7 +872,7 @@ const TryUs = () => {
           const data = JSON.parse(event.data);
           if (data.type === "auth" && !sentMessage) {
             sentMessage = true;
-            ws.send(JSON.stringify({ message }));
+            ws.send(JSON.stringify({ message, messageId, uploadedMessageId }));
             return;
           }
           if (data.type === "start") {
@@ -857,14 +918,61 @@ const TryUs = () => {
     });
   };
 
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) return;
+    if (!activeChat || !accessToken) {
+      alert("Please sign in and select a chat first.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setIsUploadingFile(true);
+    try {
+      const uploaded = await uploadDocumentToThread(activeChat, file);
+      setUploadedMessageId(uploaded.messageId);
+
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === activeChat
+            ? {
+                ...chat,
+                messages: [
+                  ...chat.messages,
+                  {
+                    id: uploaded.messageId,
+                    role: "user",
+                    content: uploaded.message,
+                    timestamp: new Date(),
+                  },
+                ],
+              }
+            : chat
+        )
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Upload failed";
+      alert(msg);
+      setSelectedFile(null);
+      setUploadedMessageId("");
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const clearUploadedDocument = () => {
+    if (isUploadingFile) return;
+    setSelectedFile(null);
+    setUploadedMessageId("");
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isTyping) return;
+    if ((!input.trim() && !uploadedMessageId) || isTyping || isUploadingFile) return;
     if (!accessToken) {
       alert("Please sign in first.");
       return;
     }
 
-    const text = input.trim();
+    const text = input.trim() || (selectedFile ? `Analyze uploaded document: ${selectedFile.name}` : "");
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -915,12 +1023,12 @@ const TryUs = () => {
       let responseText = "";
       let generatedTitle: string | undefined;
       try {
-        const wsResult = await streamChatOverWebSocket(activeChat, text);
+        const wsResult = await streamChatOverWebSocket(activeChat, text, userMessage.id, uploadedMessageId || undefined);
         responseText = wsResult.response || "No response";
         generatedTitle = wsResult.title;
       } catch (wsError) {
         console.warn("WS streaming failed, fallback to HTTP:", wsError);
-        const httpResult = await sendToBackend(activeChat, text);
+        const httpResult = await sendToBackend(activeChat, text, userMessage.id, uploadedMessageId || undefined);
         responseText = httpResult.response || "No response";
         generatedTitle = httpResult.title;
         incomingRef.current = responseText;
@@ -941,6 +1049,8 @@ const TryUs = () => {
             : chat
         )
       );
+      setSelectedFile(null);
+      setUploadedMessageId("");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Chat failed";
       stopRenderLoop();
@@ -967,7 +1077,7 @@ const TryUs = () => {
 
   const createSessionId = () => {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return crypto.randomUUID().replaceAll("-", "");
+      return crypto.randomUUID().split("-").join("");
     }
     return `${Date.now()}${Math.floor(Math.random() * 1000)}`;
   };
@@ -1061,7 +1171,7 @@ const TryUs = () => {
         generatedTitle = wsResult.title;
       } catch (wsError) {
         console.warn("WS regenerate failed, fallback to HTTP:", wsError);
-        const httpResult = await sendToBackend(activeChat, previousUser.content);
+        const httpResult = await sendToBackend(activeChat, previousUser.content, previousUser.id);
         responseText = httpResult.response || "No response";
         generatedTitle = httpResult.title;
         incomingRef.current = responseText;
@@ -1493,7 +1603,60 @@ const TryUs = () => {
         {/* Input Area */}
         <div className="border-t border-border/50 p-3 md:p-4 bg-background/80 backdrop-blur-sm flex-shrink-0 sticky bottom-0">
           <div className="max-w-4xl mx-auto">
+            {selectedFile && (
+              <div className="mb-2 rounded-xl border border-border/60 bg-secondary/40 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <p className="text-xs text-foreground truncate">
+                      {selectedFile.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {isUploadingFile ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Uploading...</span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-green-600">Ready</span>
+                    )}
+                    {!isUploadingFile && (
+                      <button
+                        type="button"
+                        onClick={clearUploadedDocument}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="Remove uploaded file"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2 md:gap-3 items-stretch h-[52px] md:h-[56px]">
+              <input
+                id="pdf-upload-input"
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0] || null;
+                  await handleFileSelect(file);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-full w-[52px] md:w-[56px] rounded-xl flex-shrink-0"
+                disabled={isUploadingFile}
+                onClick={() => document.getElementById("pdf-upload-input")?.click()}
+                title="Upload PDF"
+              >
+                +
+              </Button>
               <div className="flex-1 relative h-full">
                 <textarea
                   value={input}
@@ -1511,7 +1674,7 @@ const TryUs = () => {
               </div>
               <Button
                 onClick={handleSend}
-                disabled={!input.trim() || isTyping}
+                disabled={(!input.trim() && !uploadedMessageId) || isTyping || isUploadingFile}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground h-full w-[52px] md:w-[56px] rounded-xl flex-shrink-0"
               >
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
