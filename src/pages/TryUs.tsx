@@ -451,7 +451,9 @@ const TryUs = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => 
     typeof window !== 'undefined' ? window.innerWidth >= 768 : false
   );
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
 
   const [loggedInUser, setLoggedInUser] = useState<{ userId: string; name: string; email: string } | null>(null);
   const accessToken = getAccessToken();
@@ -558,7 +560,6 @@ const TryUs = () => {
   useEffect(() => {
     const loadConversation = async () => {
       if (!threadsLoaded || !activeChat || !accessToken) return;
-      if (!chats.some((c) => c.id === activeChat)) return;
       try {
         const res = await fetch(`${BACKEND_API_URL}/chat/${activeChat}`, {
           headers: getAuthHeaders(),
@@ -587,15 +588,24 @@ const TryUs = () => {
     };
 
     loadConversation();
-  }, [threadsLoaded, activeChat, accessToken, chats]);
+  }, [threadsLoaded, activeChat, accessToken]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 120;
+  };
+
   useEffect(() => {
-    scrollToBottom();
-  }, [currentChat?.messages]);
+    if (shouldAutoScrollRef.current || isTyping) {
+      scrollToBottom();
+    }
+  }, [currentChat?.messages.length, isTyping, activeChat]);
 
   // Expose retrigger function globally for debugging
   useEffect(() => {
@@ -1402,7 +1412,11 @@ const TryUs = () => {
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div
+          ref={messagesContainerRef}
+          onScroll={handleMessagesScroll}
+          className="flex-1 overflow-y-auto min-h-0"
+        >
           {currentChat?.messages.length === 0 ? (
             <div className="h-full flex flex-col items-start md:items-center justify-center p-4 md:p-6">
               <h2 className="text-xl md:text-2xl font-semibold text-foreground mb-2 text-left md:text-center">
