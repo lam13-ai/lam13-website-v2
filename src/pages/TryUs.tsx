@@ -4,6 +4,7 @@ import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X,
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import { NavLink } from "@/components/NavLink";
 import { Link } from "react-router-dom";
 import { getAuth, getAccessToken, getActiveChatId, setActiveChatId, clearAuth } from "@/lib/auth";
@@ -369,11 +370,6 @@ interface Message {
   hasDocument?: boolean;
   docName?: string;
   payload?: any; // Store generation payload
-  hitl?: {
-    status?: "pending" | "resolved";
-    questions?: HitlQuestion[];
-    answers?: Array<Record<string, any>>;
-  };
 }
 
 interface Chat {
@@ -389,7 +385,7 @@ interface Chat {
 interface ChatStreamResult {
   response: string;
   title?: string;
-  hitlQuestions?: HitlQuestion[];
+  agentFinals?: Array<Record<string, any>>;
 }
 
 interface UploadDocumentResult {
@@ -397,19 +393,6 @@ interface UploadDocumentResult {
   messageId: string;
   message: string;
   documentInfo?: Record<string, any>;
-}
-
-interface HitlOption {
-  id: string;
-  label: string;
-}
-
-interface HitlQuestion {
-  id: string;
-  prompt: string;
-  options: HitlOption[];
-  allow_other?: boolean;
-  other_placeholder?: string;
 }
 
 const TryUs = () => {
@@ -435,8 +418,6 @@ const TryUs = () => {
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [hitlSelectedOptions, setHitlSelectedOptions] = useState<Record<string, string>>({});
-  const [hitlOtherText, setHitlOtherText] = useState<Record<string, string>>({});
   const step6IntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isThinkingActiveRef = useRef(false);
 
@@ -601,24 +582,6 @@ const TryUs = () => {
   }, [activeChat]);
 
   const currentChat = chats.find((c) => c.id === activeChat);
-  const latestPendingHitlMessage = [...(currentChat?.messages || [])]
-    .reverse()
-    .find(
-      (m) =>
-        m.role === "assistant" &&
-        m.hitl?.status === "pending" &&
-        Array.isArray(m.hitl?.questions) &&
-        (m.hitl?.questions?.length || 0) > 0
-    );
-  const hasDraftHitlAnswers = Boolean(
-    latestPendingHitlMessage &&
-      (latestPendingHitlMessage.hitl?.questions || []).some((q) => {
-        const key = `${latestPendingHitlMessage.id}:${q.id}`;
-        const selected = hitlSelectedOptions[key];
-        const other = (hitlOtherText[key] || "").trim();
-        return Boolean(selected || other);
-      })
-  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -641,14 +604,18 @@ const TryUs = () => {
             content: m.content,
             hasDocument: Boolean(m.has_document),
             docName: m.doc_name || undefined,
-            hitl: m.hitl || undefined,
             timestamp: new Date(),
           }));
 
         setChats((prev) =>
           prev.map((chat) =>
             chat.id === activeChat
-              ? { ...chat, title: data.title || chat.title, messages }
+              ? {
+                  ...chat,
+                  title: data.title || chat.title,
+                  messages,
+                  ...(data.reportUrl ? { is_ready: true, report_link: data.reportUrl } : {}),
+                }
               : chat
           )
         );
@@ -896,9 +863,7 @@ const TryUs = () => {
     sessionId: string,
     message: string,
     messageId?: string,
-    uploadedMessageId?: string,
-    hitlAnswers?: Array<Record<string, any>>,
-    isHitlOnly?: boolean
+    uploadedMessageId?: string
   ) => {
     const form = new FormData();
     form.append("message", message);
@@ -907,12 +872,6 @@ const TryUs = () => {
     }
     if (uploadedMessageId) {
       form.append("uploadedMessageId", uploadedMessageId);
-    }
-    if (hitlAnswers && hitlAnswers.length > 0) {
-      form.append("hitlAnswers", JSON.stringify(hitlAnswers));
-    }
-    if (isHitlOnly) {
-      form.append("isHitlOnly", "true");
     }
     form.append("sessionId", sessionId);
 
@@ -934,9 +893,7 @@ const TryUs = () => {
     sessionId: string,
     message: string,
     messageId?: string,
-    uploadedMessageId?: string,
-    hitlAnswers?: Array<Record<string, any>>,
-    isHitlOnly?: boolean
+    uploadedMessageId?: string
   ): Promise<ChatStreamResult> => {
     return new Promise((resolve, reject) => {
       const token = getAccessToken();
@@ -947,6 +904,15 @@ const TryUs = () => {
 
       const ws = new WebSocket(`${BACKEND_WS_URL}/chat/ws/${sessionId}`);
       chatWsRef.current = ws;
+      const startedAt = Date.now();
+      let lastFrameAt = Date.now();
+      const watchdog = window.setInterval(() => {
+        const elapsed = Math.round((Date.now() - startedAt) / 1000);
+        const idle = Math.round((Date.now() - lastFrameAt) / 1000);
+        console.log(
+          `[CHAT-WS] waiting... elapsed=${elapsed}s idle=${idle}s streamed_chars=${incomingRef.current.length}`
+        );
+      }, 15000);
 
       let sentMessage = false;
       let resolved = false;
@@ -954,25 +920,30 @@ const TryUs = () => {
       const finish = (result: ChatStreamResult) => {
         if (resolved) return;
         resolved = true;
+        window.clearInterval(watchdog);
         resolve(result);
       };
 
       const fail = (error: string) => {
         if (resolved) return;
         resolved = true;
+        window.clearInterval(watchdog);
         reject(new Error(error));
       };
 
       ws.onopen = () => {
+        console.log(`[CHAT-WS] open session=${sessionId}`);
         ws.send(JSON.stringify({ token }));
       };
 
       ws.onmessage = (event) => {
         try {
+          lastFrameAt = Date.now();
           const data = JSON.parse(event.data);
+          console.log(`[CHAT-WS] frame type=${data.type} elapsed=${Math.round((Date.now() - startedAt) / 1000)}s`);
           if (data.type === "auth" && !sentMessage) {
             sentMessage = true;
-            ws.send(JSON.stringify({ message, messageId, uploadedMessageId, hitlAnswers, isHitlOnly: Boolean(isHitlOnly) }));
+            ws.send(JSON.stringify({ message, messageId, uploadedMessageId }));
             return;
           }
           if (data.type === "start") {
@@ -990,13 +961,13 @@ const TryUs = () => {
             return;
           }
           if (data.type === "end") {
-            const finalRaw = incomingRef.current || data?.metadata?.chatbotResponse || "";
+            const finalRaw = data?.metadata?.chatbotResponse || incomingRef.current || "";
             const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(finalRaw)));
             ws.close();
             finish({
               response: cleaned,
               title: data?.metadata?.title,
-              hitlQuestions: Array.isArray(data?.metadata?.hitlQuestions) ? data.metadata.hitlQuestions : [],
+              agentFinals: Array.isArray(data?.metadata?.agentFinals) ? data.metadata.agentFinals : [],
             });
             return;
           }
@@ -1010,12 +981,15 @@ const TryUs = () => {
       };
 
       ws.onerror = () => {
+        console.error(`[CHAT-WS] error session=${sessionId}`);
         ws.close();
         fail("WebSocket connection failed.");
       };
 
       ws.onclose = () => {
         chatWsRef.current = null;
+        window.clearInterval(watchdog);
+        console.log(`[CHAT-WS] close session=${sessionId} resolved=${resolved}`);
         if (!resolved) {
           fail("WebSocket connection closed unexpectedly.");
         }
@@ -1053,65 +1027,18 @@ const TryUs = () => {
     setUploadedMessageId("");
   };
 
-  const buildHitlKey = (messageId: string, questionId: string) => `${messageId}:${questionId}`;
-
-  const collectHitlAnswersForMessage = (message: Message | undefined) => {
-    if (!message || message.role !== "assistant") return [] as Array<Record<string, any>>;
-    const questions = message.hitl?.questions || [];
-    return questions
-      .map((q) => {
-        const key = buildHitlKey(message.id, q.id);
-        const selectedOptionId = hitlSelectedOptions[key];
-        const selectedOption = q.options.find((o) => o.id === selectedOptionId);
-        const otherText = (hitlOtherText[key] || "").trim();
-        if (!selectedOptionId && !otherText) {
-          return null;
-        }
-        return {
-          questionId: q.id,
-          question: q.prompt,
-          selectedOptionId: selectedOptionId || null,
-          selectedOptionLabel: selectedOption?.label || null,
-          otherText: otherText || null,
-        };
-      })
-      .filter(Boolean) as Array<Record<string, any>>;
-  };
-
   const handleSend = async () => {
-    const currentMessages = currentChat?.messages || [];
-    const pendingHitlMessage = [...currentMessages]
-      .reverse()
-      .find(
-        (m) =>
-          m.role === "assistant" &&
-          m.hitl?.status === "pending" &&
-          Array.isArray(m.hitl?.questions) &&
-          (m.hitl?.questions?.length || 0) > 0
-      );
-    const compiledHitlAnswers = collectHitlAnswersForMessage(pendingHitlMessage);
-    const hasHitlAnswers = compiledHitlAnswers.length > 0;
     const hasInputPayload = Boolean(input.trim() || uploadedMessageId);
 
-    if ((!hasInputPayload && !hasHitlAnswers) || isTyping || isUploadingFile) return;
+    if (!hasInputPayload || isTyping || isUploadingFile) return;
     if (!accessToken) {
       alert("Please sign in first.");
       return;
     }
 
     const text = input.trim() || (selectedFile ? `Analyze uploaded document: ${selectedFile.name}` : "");
-    const isHitlOnly = !text && hasHitlAnswers;
     const finalUserMessageId = uploadedMessageId || `${Date.now().toString()}-user`;
-    const hitlSummaryText = compiledHitlAnswers
-      .map((item) => {
-        const q = String(item.question || "").trim();
-        const ans = String(item.selectedOptionLabel || item.otherText || "").trim();
-        return q && ans ? `Q: ${q}\nA: ${ans}` : "";
-      })
-      .filter(Boolean)
-      .join("\n\n");
-
-    const userContent = isHitlOnly ? hitlSummaryText : text;
+    const userContent = text;
     const userMessage: Message = {
       id: finalUserMessageId,
       role: "user",
@@ -1169,33 +1096,24 @@ const TryUs = () => {
           activeChat,
           text,
           finalUserMessageId,
-          uploadedMessageId || undefined,
-          compiledHitlAnswers,
-          isHitlOnly
+          uploadedMessageId || undefined
         );
         responseText = wsResult.response || "No response";
         generatedTitle = wsResult.title;
-        const pendingQuestions = wsResult.hitlQuestions || [];
+
+        // Extract Kothar report URL from agentFinals
+        const kotharFinal = (wsResult.agentFinals || []).find(
+          (f: Record<string, any>) => f.agent === "kothar" && f.report_url
+        );
+        const kotharReportUrl = kotharFinal?.report_url || "";
+
         setChats((prev) =>
           prev.map((chat) => {
             if (chat.id !== activeChat) return chat;
             return {
               ...chat,
-              messages: chat.messages.map((m) => {
-                if (m.id === aiMessageId) {
-                  return {
-                    ...m,
-                    hitl:
-                      pendingQuestions.length > 0
-                        ? { status: "pending", questions: pendingQuestions }
-                        : m.hitl,
-                  };
-                }
-                if (pendingHitlMessage && m.id === pendingHitlMessage.id && hasHitlAnswers) {
-                  return { ...m, hitl: { ...(m.hitl || {}), status: "resolved" } };
-                }
-                return m;
-              }),
+              ...(kotharReportUrl ? { is_ready: true, report_link: kotharReportUrl } : {}),
+              messages: chat.messages,
             };
           })
         );
@@ -1205,36 +1123,10 @@ const TryUs = () => {
           activeChat,
           text,
           finalUserMessageId,
-          uploadedMessageId || undefined,
-          compiledHitlAnswers,
-          isHitlOnly
+          uploadedMessageId || undefined
         );
         responseText = httpResult.response || "No response";
         generatedTitle = httpResult.title;
-        const pendingQuestions = Array.isArray(httpResult.hitlQuestions) ? httpResult.hitlQuestions : [];
-        setChats((prev) =>
-          prev.map((chat) => {
-            if (chat.id !== activeChat) return chat;
-            return {
-              ...chat,
-              messages: chat.messages.map((m) => {
-                if (m.id === aiMessageId) {
-                  return {
-                    ...m,
-                    hitl:
-                      pendingQuestions.length > 0
-                        ? { status: "pending", questions: pendingQuestions }
-                        : m.hitl,
-                  };
-                }
-                if (pendingHitlMessage && m.id === pendingHitlMessage.id && hasHitlAnswers) {
-                  return { ...m, hitl: { ...(m.hitl || {}), status: "resolved" } };
-                }
-                return m;
-              }),
-            };
-          })
-        );
         incomingRef.current = responseText;
       }
 
@@ -1255,19 +1147,6 @@ const TryUs = () => {
       );
       setSelectedFile(null);
       setUploadedMessageId("");
-      if (pendingHitlMessage && hasHitlAnswers) {
-        const keysToClear = (pendingHitlMessage.hitl?.questions || []).map((q) => buildHitlKey(pendingHitlMessage.id, q.id));
-        setHitlSelectedOptions((prev) => {
-          const next = { ...prev };
-          keysToClear.forEach((key) => delete next[key]);
-          return next;
-        });
-        setHitlOtherText((prev) => {
-          const next = { ...prev };
-          keysToClear.forEach((key) => delete next[key]);
-          return next;
-        });
-      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Chat failed";
       stopRenderLoop();
@@ -1347,7 +1226,6 @@ const TryUs = () => {
     if (!chat || !accessToken || isTyping) return false;
     if (message.role !== "assistant") return false;
     if (index !== chat.messages.length - 1) return false;
-    if (message.hitl?.status === "pending") return false;
     const previous = chat.messages[index - 1];
     return Boolean(previous && previous.role === "user" && previous.content?.trim());
   };
@@ -1648,10 +1526,6 @@ const TryUs = () => {
                 const isLastAssistantMessage = message.role === "assistant" &&
                   index === currentChat.messages.length - 1;
                 const canRegenerate = canRegenerateMessage(currentChat, message, index);
-                const isVisiblePendingCard =
-                  message.role === "assistant" &&
-                  message.hitl?.status === "pending" &&
-                  message.id === latestPendingHitlMessage?.id;
                 const renderedAssistantText = formatEmbeddedJsonForDisplay(
                   cleanMessage(streamingMessageId === message.id ? streamText : message.content)
                 );
@@ -1674,9 +1548,19 @@ const TryUs = () => {
                       {message.role === "assistant" ? (
                         <div className="text-sm leading-relaxed prose prose-sm max-w-none [&>p]:whitespace-pre-wrap [&>p]:mb-4 [&>ul]:mb-3 [&>ul]:ml-4 [&>ul]:list-disc [&>ol]:mb-3 [&>ol]:ml-4 [&>ol]:list-decimal [&>li]:mb-1 [&>h1]:text-lg [&>h1]:font-bold [&>h1]:mb-2 [&>h2]:text-base [&>h2]:font-semibold [&>h2]:mb-2 [&>h3]:font-medium [&>h3]:mb-1">
                           <ReactMarkdown
-                            remarkPlugins={[remarkBreaks]}
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
                             components={{
-                              p: ({children}) => <p className="mb-4">{children}</p>
+                              p: ({children}) => <p className="mb-4">{children}</p>,
+                              table: ({children}) => (
+                                <div className="overflow-x-auto my-4">
+                                  <table className="min-w-full border-collapse border border-border/40 text-xs">
+                                    {children}
+                                  </table>
+                                </div>
+                              ),
+                              thead: ({children}) => <thead className="bg-muted/50">{children}</thead>,
+                              th: ({children}) => <th className="border border-border/40 px-3 py-2 text-left font-semibold">{children}</th>,
+                              td: ({children}) => <td className="border border-border/40 px-3 py-2 align-top">{children}</td>,
                             }}
                           >
                             {renderedAssistantText}
@@ -1699,7 +1583,7 @@ const TryUs = () => {
                       )}
                       {message.role === "assistant" && loggedInUser && message.id === currentChat?.messages[currentChat.messages.length - 1]?.id && currentChat?.is_ready && currentChat?.report_link && (
                         <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                          <p className="text-sm text-green-700 dark:text-green-300 mb-2">✓ Your report is ready and a notification has been sent to your email!</p>
+                          <p className="text-sm text-green-700 dark:text-green-300 mb-2">Your report is ready!</p>
                           <Button
                             variant="default"
                             size="sm"
@@ -1712,47 +1596,6 @@ const TryUs = () => {
                         </div>
                       )}
                     </div>
-                    {isVisiblePendingCard && (message.hitl?.questions?.length || 0) > 0 && (
-                      <div className="mt-3 rounded-xl border border-border/60 bg-secondary/30 p-3 space-y-3 max-w-[85%] md:max-w-[70%]">
-                        <p className="text-sm font-medium">Quick clarifications</p>
-                        {(message.hitl?.questions || []).map((q) => {
-                          const key = buildHitlKey(message.id, q.id);
-                          return (
-                            <div key={q.id} className="space-y-2">
-                              <p className="text-xs md:text-sm text-foreground">{q.prompt}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {q.options.map((option) => (
-                                  <button
-                                    key={option.id}
-                                    type="button"
-                                    className={`px-2 py-1 rounded-md text-xs border ${
-                                      hitlSelectedOptions[key] === option.id
-                                        ? "bg-accent text-accent-foreground border-accent"
-                                        : "bg-background border-border/60"
-                                    }`}
-                                    onClick={() =>
-                                      setHitlSelectedOptions((prev) => ({ ...prev, [key]: option.id }))
-                                    }
-                                  >
-                                    {option.label}
-                                  </button>
-                                ))}
-                              </div>
-                              {q.allow_other && (
-                                <input
-                                  value={hitlOtherText[key] || ""}
-                                  onChange={(e) =>
-                                    setHitlOtherText((prev) => ({ ...prev, [key]: e.target.value }))
-                                  }
-                                  placeholder={q.other_placeholder || "Please specify"}
-                                  className="w-full rounded-md border border-border/60 bg-background px-2 py-1 text-xs md:text-sm"
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                     {message.role === "assistant" && (() => {
                       const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") || 
                                              message.content.toLowerCase().includes("our servers are overloaded") || 
@@ -1963,7 +1806,7 @@ const TryUs = () => {
               </div>
               <Button
                 onClick={handleSend}
-                disabled={(!input.trim() && !uploadedMessageId && !hasDraftHitlAnswers) || isTyping || isUploadingFile}
+                disabled={(!input.trim() && !uploadedMessageId) || isTyping || isUploadingFile}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground h-full w-[52px] md:w-[56px] rounded-xl flex-shrink-0"
               >
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
