@@ -33,6 +33,11 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
 
+        env:
+          VITE_BACKEND_API_URL: ${{ secrets.VITE_STAGE_BACKEND_API_URL }}
+          VITE_BACKEND_WS_URL: ${{ secrets.VITE_STAGE_BACKEND_WS_URL }}
+          VITE_DEBUG: ${{ secrets.VITE_STAGE_DEBUG }}
+
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
