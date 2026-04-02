@@ -424,6 +424,7 @@ const TryUs = () => {
   // Report generation progress
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<string>("");
+  const [eshmunGenerating, setEshmunGenerating] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const chatWsRef = useRef<WebSocket | null>(null);
 
@@ -963,6 +964,9 @@ const TryUs = () => {
           if (data.type === "end") {
             const finalRaw = data?.metadata?.chatbotResponse || incomingRef.current || "";
             const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(finalRaw)));
+            if (data.metadata?.eshmunReportGeneratingStatus === "in_progress") {
+              setEshmunGenerating(true);
+            }
             ws.close();
             finish({
               response: cleaned,
@@ -1106,6 +1110,12 @@ const TryUs = () => {
           (f: Record<string, any>) => f.agent === "kothar" && f.report_url
         );
         const kotharReportUrl = kotharFinal?.report_url || "";
+
+        // Detect eshmun fire-and-forget dispatch
+        const eshmunFinal = (wsResult.agentFinals || []).find(
+          (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
+        );
+        if (eshmunFinal) setEshmunGenerating(true);
 
         setChats((prev) =>
           prev.map((chat) => {
@@ -1724,6 +1734,14 @@ const TryUs = () => {
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <span className="inline-block w-4 h-4 border-2 border-green-300 border-t-green-600 rounded-full animate-spin" />
                     <span className="animate-pulse">{currentProgress}</span>
+                  </div>
+                </div>
+              )}
+              {eshmunGenerating && (
+                <div className="flex gap-2 md:gap-4">
+                  <div className="flex items-center gap-2 text-sm text-blue-600 p-3 bg-blue-50 rounded-lg">
+                    <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin flex-shrink-0" />
+                    <span>Your strategy document is being generated and will be sent to your email.</span>
                   </div>
                 </div>
               )}
