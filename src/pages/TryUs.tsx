@@ -620,6 +620,11 @@ const TryUs = () => {
               : chat
           )
         );
+        if (data.eshmunReportGeneratingStatus === "in_progress") {
+          setEshmunGenerating(true);
+        } else if (data.eshmunReportGeneratingStatus === "completed") {
+          setEshmunGenerating(false);
+        }
         loadedConversationRef.current = activeChat;
       } catch (err) {
         if ((err as Error).name === "AbortError") {
@@ -632,6 +637,65 @@ const TryUs = () => {
     loadConversation();
     return () => controller.abort();
   }, [threadsLoaded, activeChat, accessToken]);
+
+  // Poll Eshmun status while a strategy report is being generated.
+  // When the backend flips to "completed", refetch the conversation so the
+  // updated AI message (with filename + URL) replaces the spinner pill — no
+  // page reload required.
+  useEffect(() => {
+    if (!eshmunGenerating || !activeChat || !accessToken) return;
+
+    const sessionForPoll = activeChat;
+    let cancelled = false;
+
+    const tick = async () => {
+      try {
+        const res = await fetch(
+          `${BACKEND_API_URL}/eshmun/status/${sessionForPoll}`,
+          { headers: getAuthHeaders() }
+        );
+        if (cancelled || !res.ok) return;
+        const data = await res.json();
+        if (data.status !== "completed") return;
+
+        const convRes = await fetch(`${BACKEND_API_URL}/chat/${sessionForPoll}`, {
+          headers: getAuthHeaders(),
+        });
+        if (cancelled || !convRes.ok) return;
+        const conv = await convRes.json();
+        const refreshed: Message[] = (conv.messages || [])
+          .filter((m: any) => m.role === "user" || m.role === "assistant")
+          .map((m: any, idx: number) => ({
+            id: m.id || `${sessionForPoll}-${idx}`,
+            role: m.role,
+            content: m.content,
+            hasDocument: Boolean(m.has_document),
+            docName: m.doc_name || undefined,
+            timestamp: new Date(),
+          }));
+
+        if (cancelled) return;
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === sessionForPoll ? { ...chat, messages: refreshed } : chat
+          )
+        );
+        setEshmunGenerating(false);
+      } catch (err) {
+        console.error("[eshmun-poll] error:", err);
+      }
+    };
+
+    const interval = window.setInterval(tick, 25000);
+    // Fire one immediate check so users who land on a completed chat don't
+    // wait a full cycle.
+    tick();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [eshmunGenerating, activeChat, accessToken]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
