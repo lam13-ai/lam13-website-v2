@@ -1249,7 +1249,9 @@ const TryUs = () => {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       return crypto.randomUUID().split("-").join("");
     }
-    return `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   };
 
   const handleNewChat = () => {
