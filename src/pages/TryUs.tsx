@@ -1018,10 +1018,16 @@ const TryUs = () => {
             if (typeof data.content === "string" && data.content.trim()) {
               setThinkingText(data.content);
               setIsThinkingExpanded(true);
+              isThinkingActiveRef.current = true;
             }
             return;
           }
           if (data.type === "stream") {
+            if (isThinkingActiveRef.current) {
+              isThinkingActiveRef.current = false;
+              setIsThinkingExpanded(false);
+              setThinkingText("");
+            }
             incomingRef.current += data.content || "";
             return;
           }
