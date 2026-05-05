@@ -18,7 +18,6 @@ const isReport = (content: string): boolean => {
   return hasLength || (hasHeaders && hasSections);
 };
 const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL
-const BACKEND_WS_URL = import.meta.env.VITE_BACKEND_WS_URL || BACKEND_API_URL.replace(/^http/, "ws")
 const STEP2_API_URL = import.meta.env.VITE_STEP2_API_URL || "http://localhost:8001"
 const STEP2_WS_URL = import.meta.env.VITE_STEP2_WS_URL || "ws://localhost:8001"
 const STEP6_API_URL = import.meta.env.VITE_STEP6_API_URL || "http://localhost:8002"
@@ -143,8 +142,8 @@ const smartAppend = (prev: string, next: string): string => {
   return prev + next;
 };
 
-// Robust SSE parser (handles chunk boundaries, multiple data: lines per event, \r\n line endings)
-const createSSEParser = (onData: (data: string) => void) => {
+// Robust SSE parser — captures event: name + data: lines per event block
+const createSSEParser = (onEvent: (eventName: string, data: string) => void) => {
   let buffer = "";
 
   const feed = (chunk: string) => {
@@ -156,33 +155,30 @@ const createSSEParser = (onData: (data: string) => void) => {
     for (const ev of events) {
       const lines = ev.split(/\r?\n/);
       const dataLines: string[] = [];
+      let eventName = "message"; // SSE default
 
       for (const line of lines) {
-        if (!line.startsWith("data:")) continue;
-        // SSE spec: strip "data:" and optional single space after colon
-        let payload = line.slice(5); // Remove "data:"
-        if (payload.startsWith(" ")) payload = payload.slice(1); // Remove single leading space
-        console.log('[SSE-LINE]', JSON.stringify(line), '-> payload:', JSON.stringify(payload));
-        dataLines.push(payload);
+        if (line.startsWith("event:")) {
+          eventName = line.slice(6).trim();
+        } else if (line.startsWith("data:")) {
+          let payload = line.slice(5);
+          if (payload.startsWith(" ")) payload = payload.slice(1);
+          dataLines.push(payload);
+        }
       }
 
-      // Empty events (no data: lines) represent paragraph breaks
-      if (dataLines.length === 0) {
-        onData("");
-        continue;
-      }
+      if (dataLines.length === 0) continue;
 
       const data = dataLines.join("\n");
-      if (DEBUG) console.log('[SSE-PARSED-DATA]', JSON.stringify(data));
       if (data === "[DONE]") continue;
+      if (DEBUG) debug("[SSE]", eventName, data.slice(0, 120));
 
-      onData(data);
+      onEvent(eventName, data);
     }
   };
 
   const flush = () => {
     if (!buffer) return;
-    // Force an event boundary so the last partial event is processed.
     feed("\n\n");
   };
 
@@ -389,10 +385,12 @@ interface ChatStreamResult {
 }
 
 interface UploadDocumentResult {
-  sessionId: string;
-  messageId: string;
-  message: string;
-  documentInfo?: Record<string, any>;
+  id: string;
+  pdfName: string;
+  mode: "inline" | "vectorized";
+  tokenCount: number;
+  namespace: string;
+  chunkCount?: number;
 }
 
 const TryUs = () => {
@@ -412,8 +410,8 @@ const TryUs = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadedMessageId, setUploadedMessageId] = useState<string>("");
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadedDocumentId, setUploadedDocumentId] = useState<string>("");
   const [thinkingText, setThinkingText] = useState<string>("");
   const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -426,7 +424,7 @@ const TryUs = () => {
   const [currentProgress, setCurrentProgress] = useState<string>("");
   const [eshmunGenerating, setEshmunGenerating] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const chatWsRef = useRef<WebSocket | null>(null);
+  const sseAbortRef = useRef<AbortController | null>(null);
 
   // Streaming state
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -489,15 +487,11 @@ const TryUs = () => {
     Authorization: `Bearer ${getAccessToken()}`,
   });
 
-  // Cleanup WebSocket on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (chatWsRef.current) {
-        chatWsRef.current.close();
-      }
+      if (wsRef.current) wsRef.current.close();
+      if (sseAbortRef.current) sseAbortRef.current.abort();
     };
   }, []);
 
@@ -532,7 +526,7 @@ const TryUs = () => {
         return;
       }
       try {
-        const res = await fetch(`${BACKEND_API_URL}/chat/`, {
+        const res = await fetch(`${BACKEND_API_URL}/chat/sessions`, {
           headers: getAuthHeaders(),
         });
         if (!res.ok) {
@@ -591,7 +585,7 @@ const TryUs = () => {
       if (loadedConversationRef.current === activeChat) return;
 
       try {
-        const res = await fetch(`${BACKEND_API_URL}/chat/${activeChat}`, {
+        const res = await fetch(`${BACKEND_API_URL}/chat/sessions/${activeChat}`, {
           headers: getAuthHeaders(),
           signal: controller.signal,
         });
@@ -658,7 +652,7 @@ const TryUs = () => {
         const data = await res.json();
         if (data.status !== "completed") return;
 
-        const convRes = await fetch(`${BACKEND_API_URL}/chat/${sessionForPoll}`, {
+        const convRes = await fetch(`${BACKEND_API_URL}/chat/sessions/${sessionForPoll}`, {
           headers: getAuthHeaders(),
         });
         if (cancelled || !convRes.ok) return;
@@ -900,17 +894,11 @@ const TryUs = () => {
     }, 5000); // 5 seconds per step
   };
 
-  const uploadDocumentToThread = async (
-    sessionId: string,
-    messageId: string,
-    file: File
-  ): Promise<UploadDocumentResult> => {
+  const uploadDocument = async (file: File): Promise<UploadDocumentResult> => {
     const form = new FormData();
     form.append("file", file);
-    form.append("messageId", messageId);
-    form.append("message", `Uploaded document: ${file.name}`);
 
-    const response = await fetch(`${BACKEND_API_URL}/chat/${sessionId}/messages/upload`, {
+    const response = await fetch(`${BACKEND_API_URL}/chat/upload`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: form,
@@ -924,172 +912,134 @@ const TryUs = () => {
     return response.json();
   };
 
-  const sendToBackend = async (
+  const streamChatOverSSE = async (
     sessionId: string,
     message: string,
-    messageId?: string,
-    uploadedMessageId?: string
-  ) => {
-    const form = new FormData();
-    form.append("message", message);
-    if (messageId) {
-      form.append("messageId", messageId);
-    }
-    if (uploadedMessageId) {
-      form.append("uploadedMessageId", uploadedMessageId);
-    }
-    form.append("sessionId", sessionId);
+    usersDocumentId?: string
+  ): Promise<ChatStreamResult> => {
+    if (!getAccessToken()) throw new Error("Please sign in first.");
 
-    const response = await fetch(`${BACKEND_API_URL}/chat/`, {
+    // Cancel any previous stream
+    if (sseAbortRef.current) sseAbortRef.current.abort();
+    const abort = new AbortController();
+    sseAbortRef.current = abort;
+
+    const body: Record<string, any> = { session_id: sessionId, user_message: message };
+    if (usersDocumentId) body.users_document_id = usersDocumentId;
+
+    const response = await fetch(`${BACKEND_API_URL}/chat/stream`, {
       method: "POST",
-      headers: getAuthHeaders(),
-      body: form,
+      headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: abort.signal,
     });
 
     if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      throw new Error(data?.detail || `Chat error: ${response.status}`);
+      const err = await response.json().catch(() => null);
+      throw new Error(err?.detail || `Chat error: ${response.status}`);
     }
 
-    return response.json();
-  };
-
-  const streamChatOverWebSocket = async (
-    sessionId: string,
-    message: string,
-    messageId?: string,
-    uploadedMessageId?: string
-  ): Promise<ChatStreamResult> => {
-    return new Promise((resolve, reject) => {
-      const token = getAccessToken();
-      if (!token) {
-        reject(new Error("Please sign in first."));
-        return;
-      }
-
-      const ws = new WebSocket(`${BACKEND_WS_URL}/chat/ws/${sessionId}`);
-      chatWsRef.current = ws;
-      const startedAt = Date.now();
-      let lastFrameAt = Date.now();
-      const watchdog = window.setInterval(() => {
-        const elapsed = Math.round((Date.now() - startedAt) / 1000);
-        const idle = Math.round((Date.now() - lastFrameAt) / 1000);
-        console.log(
-          `[CHAT-WS] waiting... elapsed=${elapsed}s idle=${idle}s streamed_chars=${incomingRef.current.length}`
-        );
-      }, 15000);
-
-      let sentMessage = false;
+    return new Promise<ChatStreamResult>((resolve, reject) => {
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
       let resolved = false;
 
-      const finish = (result: ChatStreamResult) => {
+      const finish = (r: ChatStreamResult) => {
         if (resolved) return;
         resolved = true;
-        window.clearInterval(watchdog);
-        resolve(result);
+        resolve(r);
       };
-
-      const fail = (error: string) => {
+      const fail = (msg: string) => {
         if (resolved) return;
         resolved = true;
-        window.clearInterval(watchdog);
-        reject(new Error(error));
+        reject(new Error(msg));
       };
 
-      ws.onopen = () => {
-        console.log(`[CHAT-WS] open session=${sessionId}`);
-        ws.send(JSON.stringify({ token }));
-      };
-
-      ws.onmessage = (event) => {
+      const parser = createSSEParser((eventName: string, data: string) => {
         try {
-          lastFrameAt = Date.now();
-          const data = JSON.parse(event.data);
-          console.log(`[CHAT-WS] frame type=${data.type} elapsed=${Math.round((Date.now() - startedAt) / 1000)}s`);
-          if (data.type === "auth" && !sentMessage) {
-            sentMessage = true;
-            ws.send(JSON.stringify({ message, messageId, uploadedMessageId }));
-            return;
-          }
-          if (data.type === "start") {
-            return;
-          }
-          if (data.type === "event") {
-            if (typeof data.content === "string" && data.content.trim()) {
-              setThinkingText(data.content);
-              setIsThinkingExpanded(true);
-              isThinkingActiveRef.current = true;
-            }
-            return;
-          }
-          if (data.type === "stream") {
+          const parsed = JSON.parse(data);
+          if (eventName === "token") {
+            // First token collapses any thinking UI
             if (isThinkingActiveRef.current) {
               isThinkingActiveRef.current = false;
               setIsThinkingExpanded(false);
               setThinkingText("");
             }
-            incomingRef.current += data.content || "";
-            return;
-          }
-          if (data.type === "end") {
-            const finalRaw = data?.metadata?.chatbotResponse || incomingRef.current || "";
-            const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(finalRaw)));
-            if (data.metadata?.eshmunReportGeneratingStatus === "in_progress") {
+            incomingRef.current += parsed.content || "";
+          } else if (eventName === "thinking") {
+            const content = (parsed.content || "").trim();
+            if (content) {
+              setThinkingText(content);
+              setIsThinkingExpanded(true);
+              isThinkingActiveRef.current = true;
+            }
+          } else if (eventName === "progress") {
+            const content = (parsed.content || "").trim();
+            if (content) {
+              setThinkingText(content);
+              setIsThinkingExpanded(true);
+              isThinkingActiveRef.current = true;
+            }
+          } else if (eventName === "done") {
+            if (parsed.eshmunReportGeneratingStatus === "in_progress") {
               setEshmunGenerating(true);
             }
-            ws.close();
+            const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(incomingRef.current)));
             finish({
               response: cleaned,
-              title: data?.metadata?.title,
-              agentFinals: Array.isArray(data?.metadata?.agentFinals) ? data.metadata.agentFinals : [],
+              title: parsed.title,
+              agentFinals: Array.isArray(parsed.agentFinals) ? parsed.agentFinals : [],
             });
-            return;
-          }
-          if (data.type === "error") {
-            ws.close();
-            fail(data.content || "Streaming failed.");
+          } else if (eventName === "error") {
+            fail(parsed.content || "Streaming failed.");
           }
         } catch {
-          // Ignore malformed frames.
+          // ignore malformed SSE data
+        }
+      });
+
+      const pump = async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              parser.flush();
+              if (!resolved) {
+                const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(incomingRef.current)));
+                finish({ response: cleaned || "No response" });
+              }
+              break;
+            }
+            parser.feed(decoder.decode(value, { stream: true }));
+          }
+        } catch (e) {
+          if ((e as Error).name !== "AbortError") {
+            fail(e instanceof Error ? e.message : "Stream read error");
+          }
         }
       };
 
-      ws.onerror = () => {
-        console.error(`[CHAT-WS] error session=${sessionId}`);
-        ws.close();
-        fail("WebSocket connection failed.");
-      };
-
-      ws.onclose = () => {
-        chatWsRef.current = null;
-        window.clearInterval(watchdog);
-        console.log(`[CHAT-WS] close session=${sessionId} resolved=${resolved}`);
-        if (!resolved) {
-          fail("WebSocket connection closed unexpectedly.");
-        }
-      };
+      pump();
     });
   };
 
   const handleFileSelect = async (file: File | null) => {
     if (!file) return;
-    if (!activeChat || !accessToken) {
-      alert("Please sign in and select a chat first.");
+    if (!accessToken) {
+      alert("Please sign in first.");
       return;
     }
 
-    const pendingMessageId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setSelectedFile(file);
-    setUploadedMessageId(pendingMessageId);
     setIsUploadingFile(true);
     try {
-      const uploaded = await uploadDocumentToThread(activeChat, pendingMessageId, file);
-      setUploadedMessageId(uploaded.messageId || pendingMessageId);
+      const uploaded = await uploadDocument(file);
+      setUploadedDocumentId(uploaded.id);
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Upload failed";
       alert(msg);
       setSelectedFile(null);
-      setUploadedMessageId("");
+      setUploadedDocumentId("");
     } finally {
       setIsUploadingFile(false);
     }
@@ -1098,11 +1048,11 @@ const TryUs = () => {
   const clearUploadedDocument = () => {
     if (isUploadingFile) return;
     setSelectedFile(null);
-    setUploadedMessageId("");
+    setUploadedDocumentId("");
   };
 
   const handleSend = async () => {
-    const hasInputPayload = Boolean(input.trim() || uploadedMessageId);
+    const hasInputPayload = Boolean(input.trim() || uploadedDocumentId);
 
     if (!hasInputPayload || isTyping || isUploadingFile) return;
     if (!accessToken) {
@@ -1111,13 +1061,12 @@ const TryUs = () => {
     }
 
     const text = input.trim() || (selectedFile ? `Analyze uploaded document: ${selectedFile.name}` : "");
-    const finalUserMessageId = uploadedMessageId || `${Date.now().toString()}-user`;
-    const userContent = text;
+    const userMessageId = `${Date.now()}-user`;
     const userMessage: Message = {
-      id: finalUserMessageId,
+      id: userMessageId,
       role: "user",
-      content: userContent,
-      hasDocument: Boolean(uploadedMessageId || selectedFile),
+      content: text,
+      hasDocument: Boolean(uploadedDocumentId || selectedFile),
       docName: selectedFile?.name,
       timestamp: new Date(),
     };
@@ -1129,8 +1078,8 @@ const TryUs = () => {
               ...chat,
               messages: [...chat.messages, userMessage],
               title:
-                chat.messages.length === 0 && chat.title === "New conversation" && userContent
-                  ? userContent.slice(0, 30) + "..."
+                chat.messages.length === 0 && chat.title === "New conversation" && text
+                  ? text.slice(0, 30) + "..."
                   : chat.title,
             }
           : chat
@@ -1163,70 +1112,42 @@ const TryUs = () => {
     startRenderLoop();
 
     try {
-      let responseText = "";
-      let generatedTitle: string | undefined;
-      try {
-        const wsResult = await streamChatOverWebSocket(
-          activeChat,
-          text,
-          finalUserMessageId,
-          uploadedMessageId || undefined
-        );
-        responseText = wsResult.response || "No response";
-        generatedTitle = wsResult.title;
+      const sseResult = await streamChatOverSSE(
+        activeChat,
+        text,
+        uploadedDocumentId || undefined
+      );
+      const responseText = sseResult.response || "No response";
+      const generatedTitle = sseResult.title;
 
-        // Extract Kothar report URL from agentFinals
-        const kotharFinal = (wsResult.agentFinals || []).find(
-          (f: Record<string, any>) => f.agent === "kothar" && f.report_url
-        );
-        const kotharReportUrl = kotharFinal?.report_url || "";
+      // Extract Kothar report URL from agentFinals
+      const kotharFinal = (sseResult.agentFinals || []).find(
+        (f: Record<string, any>) => f.agent === "kothar" && f.report_url
+      );
 
-        // Detect eshmun fire-and-forget dispatch
-        const eshmunFinal = (wsResult.agentFinals || []).find(
-          (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
-        );
-        if (eshmunFinal) setEshmunGenerating(true);
-
-        setChats((prev) =>
-          prev.map((chat) => {
-            if (chat.id !== activeChat) return chat;
-            return {
-              ...chat,
-              ...(kotharReportUrl ? { is_ready: true, report_link: kotharReportUrl } : {}),
-              messages: chat.messages,
-            };
-          })
-        );
-      } catch (wsError) {
-        console.warn("WS streaming failed, fallback to HTTP:", wsError);
-        const httpResult = await sendToBackend(
-          activeChat,
-          text,
-          finalUserMessageId,
-          uploadedMessageId || undefined
-        );
-        responseText = httpResult.response || "No response";
-        generatedTitle = httpResult.title;
-        incomingRef.current = responseText;
-      }
+      // Detect eshmun fire-and-forget dispatch
+      const eshmunFinal = (sseResult.agentFinals || []).find(
+        (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
+      );
+      if (eshmunFinal) setEshmunGenerating(true);
 
       stopRenderLoop();
       setStreamText(responseText);
       setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === activeChat
-            ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === aiMessageId ? { ...m, content: responseText } : m
-                ),
-                title: generatedTitle || chat.title,
-              }
-            : chat
-        )
+        prev.map((chat) => {
+          if (chat.id !== activeChat) return chat;
+          return {
+            ...chat,
+            ...(kotharFinal?.report_url ? { is_ready: true, report_link: kotharFinal.report_url } : {}),
+            messages: chat.messages.map((m) =>
+              m.id === aiMessageId ? { ...m, content: responseText } : m
+            ),
+            title: generatedTitle || chat.title,
+          };
+        })
       );
       setSelectedFile(null);
-      setUploadedMessageId("");
+      setUploadedDocumentId("");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Chat failed";
       stopRenderLoop();
@@ -1277,7 +1198,7 @@ const TryUs = () => {
     if (!accessToken) return;
 
     try {
-      await fetch(`${BACKEND_API_URL}/chat/${chatId}`, {
+      await fetch(`${BACKEND_API_URL}/chat/sessions/${chatId}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -1349,19 +1270,9 @@ const TryUs = () => {
     startRenderLoop();
 
     try {
-      let responseText = "";
-      let generatedTitle: string | undefined;
-      try {
-        const wsResult = await streamChatOverWebSocket(activeChat, previousUser.content);
-        responseText = wsResult.response || "No response";
-        generatedTitle = wsResult.title;
-      } catch (wsError) {
-        console.warn("WS regenerate failed, fallback to HTTP:", wsError);
-        const httpResult = await sendToBackend(activeChat, previousUser.content, previousUser.id);
-        responseText = httpResult.response || "No response";
-        generatedTitle = httpResult.title;
-        incomingRef.current = responseText;
-      }
+      const sseResult = await streamChatOverSSE(activeChat, previousUser.content);
+      const responseText = sseResult.response || "No response";
+      const generatedTitle = sseResult.title;
 
       stopRenderLoop();
       setStreamText(responseText);
@@ -1394,12 +1305,10 @@ const TryUs = () => {
     if (!accessToken) return;
 
     try {
-      const response = await fetch(`${BACKEND_API_URL}/chat/${chatId}/rename`, {
-        method: 'PUT',
+      const response = await fetch(`${BACKEND_API_URL}/chat/sessions/${chatId}`, {
+        method: 'PATCH',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newName.trim(),
-        })
+        body: JSON.stringify({ title: newName.trim() }),
       });
 
       if (response.ok) {
@@ -1896,7 +1805,7 @@ const TryUs = () => {
               </div>
               <Button
                 onClick={handleSend}
-                disabled={(!input.trim() && !uploadedMessageId) || isTyping || isUploadingFile}
+                disabled={(!input.trim() && !uploadedDocumentId) || isTyping || isUploadingFile}
                 className="bg-accent hover:bg-accent/90 text-accent-foreground h-full w-[52px] md:w-[56px] rounded-xl flex-shrink-0"
               >
                 <Send className="w-4 h-4 md:w-5 md:h-5" />
