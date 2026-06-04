@@ -10,6 +10,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import TryUs from "./pages/TryUs";
 import Auth from "./pages/Auth";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/try" element={<TryUs />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<AdminPanel />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

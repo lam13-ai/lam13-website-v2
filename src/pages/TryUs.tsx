@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X, Trash2, MoreHorizontal, Edit, Copy, ThumbsUp, ThumbsDown, RotateCcw, Search, Loader2, FileText } from "lucide-react";
+import { Send, Bot, User, Menu, Plus, MessageSquare, LogIn, LogOut, Download, X, Trash2, MoreHorizontal, Edit, Copy, ThumbsUp, ThumbsDown, RotateCcw, Search, Loader2, FileText, Shield } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -481,6 +481,7 @@ const TryUs = () => {
   const shouldAutoScrollRef = useRef(true);
 
   const [loggedInUser, setLoggedInUser] = useState<{ userId: string; name: string; email: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const accessToken = getAccessToken();
 
   const getAuthHeaders = () => ({
@@ -518,6 +519,28 @@ const TryUs = () => {
     }
     setLoggedInUser(null);
   }, []);
+
+  // Determine admin-panel access (email allow-list lives on the backend).
+  useEffect(() => {
+    if (!accessToken) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${BACKEND_API_URL}/admin/verify`, {
+          headers: getAuthHeaders(),
+        });
+        if (!cancelled) setIsAdmin(res.ok);
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
 
   useEffect(() => {
     const loadChatThreads = async () => {
@@ -1420,6 +1443,15 @@ const TryUs = () => {
               <Search className="w-5 h-5" />
               Search chats
             </button>
+          )}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-200/50 rounded-lg transition-colors"
+            >
+              <Shield className="w-5 h-5" />
+              Admin Panel
+            </Link>
           )}
         </div>
 
