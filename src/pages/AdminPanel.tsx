@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, Upload, FileText, ExternalLink, X, Database, Search } from "lucide-react";
 
-import { getAuth, getAccessToken } from "@/lib/auth";
+import { getAccessToken } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,8 +59,18 @@ interface VectorizeResponse {
   indexes: Record<string, string>; // {field: "created"|"exists"|"error: ..."}
 }
 
-// Step 3 — retrieve hit + response
+// Step 3 — retrieve hit + response (production /kb/retrieve contract)
+interface LlmReasoning {
+  slide_doc_id?: string;
+  is_strong_match?: boolean;
+  match_quality?: string;
+  reasoning?: string;
+  key_alignments?: string[];
+  gaps?: string[];
+}
+
 interface RetrieveHit {
+  slide_doc_id: string;
   template_id: string;
   score: number;
   layout_family?: string | null;
@@ -71,20 +80,21 @@ interface RetrieveHit {
   raw_file_link?: string | null;
   thumbnail_blob_key?: string | null;
   content_summary?: string | null;
+  slide_detailed_info: string; // secure link to the full document
+  llm_reasoning?: LlmReasoning | null;
 }
 
 interface RetrieveResponse {
-  results: Record<string, RetrieveHit[]>;
+  query: string;
+  vector_field: string;
+  count: number;
+  results: RetrieveHit[];
 }
 
 const EMBED_FIELDS = ["visual_layout_text", "use_cases", "tags", "notes"] as const;
-
-type AccessState = "checking" | "granted" | "denied";
+type VectorField = (typeof EMBED_FIELDS)[number];
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const [access, setAccess] = useState<AccessState>("checking");
-  const [adminEmail, setAdminEmail] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<KbUploadResult[]>([]);
@@ -101,35 +111,18 @@ const AdminPanel = () => {
 
   // ── Step 3: retrieve state ────────────────────────────────────────────────
   const [query, setQuery] = useState("");
+  const [vectorField, setVectorField] = useState<VectorField>("visual_layout_text");
   const [topK, setTopK] = useState(5);
+  const [filterText, setFilterText] = useState("");
+  const [withReasoning, setWithReasoning] = useState(false);
+  const [additionalInfo, setAdditionalInfo] = useState("");
   const [retrieving, setRetrieving] = useState(false);
-  const [retrieveResults, setRetrieveResults] = useState<Record<string, RetrieveHit[]> | null>(null);
+  const [retrieveResults, setRetrieveResults] = useState<RetrieveHit[] | null>(null);
 
-  // ── Verify admin access on mount ──────────────────────────────────────────
+  // Load the KB documents once on mount (admin access is enforced by AdminLayout).
   useEffect(() => {
-    const auth = getAuth();
-    if (!auth) {
-      navigate("/auth");
-      return;
-    }
-    (async () => {
-      try {
-        const res = await fetch(`${BACKEND_API_URL}/admin/verify`, {
-          headers: { Authorization: `Bearer ${getAccessToken()}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setAdminEmail(data?.email ?? auth.email);
-          setAccess("granted");
-          loadDocuments();
-        } else {
-          setAccess("denied");
-        }
-      } catch {
-        setAccess("denied");
-      }
-    })();
-  }, [navigate]);
+    loadDocuments();
+  }, []);
 
   // ── Load KB documents (files + slides) for the vectorize picker ───────────
   const loadDocuments = async () => {
@@ -303,28 +296,47 @@ const AdminPanel = () => {
       toast.error("Enter a query to search.");
       return;
     }
+
+    // Parse the optional metadata filter (JSON object → Atlas $vectorSearch pre-filter).
+    let filterObj: Record<string, unknown> | null = null;
+    const trimmedFilter = filterText.trim();
+    if (trimmedFilter) {
+      try {
+        filterObj = JSON.parse(trimmedFilter);
+        if (typeof filterObj !== "object" || Array.isArray(filterObj)) {
+          throw new Error("Filter must be a JSON object.");
+        }
+      } catch (err) {
+        toast.error(`Invalid filter JSON: ${err instanceof Error ? err.message : "parse error"}`);
+        return;
+      }
+    }
+
     setRetrieving(true);
     setRetrieveResults(null);
     try {
-      const res = await fetch(`${BACKEND_API_URL}/admin/kb/retrieve`, {
+      const res = await fetch(`${BACKEND_API_URL}/admin/kb/test-retrieve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getAccessToken()}`,
         },
-        body: JSON.stringify({ query: query.trim(), k: topK }),
+        body: JSON.stringify({
+          query: query.trim(),
+          vector_field: vectorField,
+          top_k: topK,
+          filter: filterObj,
+          with_llm_reasoning: withReasoning,
+          additional_information: withReasoning ? additionalInfo.trim() || null : null,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.detail || `Retrieve failed (${res.status}).`);
       }
       const data: RetrieveResponse = await res.json();
-      setRetrieveResults(data.results ?? {});
-      const total = Object.values(data.results ?? {}).reduce(
-        (n, hits) => n + hits.length,
-        0,
-      );
-      toast.success(`Found ${total} hit(s) across ${EMBED_FIELDS.length} fields.`);
+      setRetrieveResults(data.results ?? []);
+      toast.success(`Found ${data.count ?? data.results?.length ?? 0} hit(s) on ${vectorField}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Retrieve failed.");
     } finally {
@@ -332,41 +344,37 @@ const AdminPanel = () => {
     }
   };
 
-  // ── Render states ──────────────────────────────────────────────────────---
-  if (access === "checking") {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (access === "denied") {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="max-w-md text-center">
-          <CardHeader>
-            <CardTitle>Not authorized</CardTitle>
-            <CardDescription>
-              Your account does not have access to the admin panel.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link to="/">Back to home</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Open a result's full document via its secure detail link (sends the admin Bearer token).
+  const openSlideDetail = async (link: string) => {
+    try {
+      const res = await fetch(link, {
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
+      });
+      if (!res.ok) throw new Error(`Detail fetch failed (${res.status}).`);
+      const doc = await res.json();
+      const win = window.open("", "_blank");
+      if (win) {
+        win.document.title = "Slide template document";
+        win.document.body.style.cssText = "margin:0;background:#0b1021;color:#d6e1ff;";
+        const pre = win.document.createElement("pre");
+        pre.style.cssText = "padding:16px;font:12px/1.5 monospace;white-space:pre-wrap;word-break:break-word;";
+        pre.textContent = JSON.stringify(doc, null, 2);
+        win.document.body.appendChild(pre);
+      } else {
+        toast.message("Pop-up blocked — logged document to console.");
+        console.log(doc);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load slide detail.");
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Admin Panel — Knowledge Base</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Knowledge Base</h1>
         <p className="text-sm text-muted-foreground">
-          Signed in as {adminEmail}. Upload PDF, PPT, or PPTX files to the knowledge base.
+          Upload PDF, PPT, or PPTX files, vectorize slide templates, and test retrieval.
         </p>
       </div>
 
@@ -632,8 +640,8 @@ const AdminPanel = () => {
             <Search className="h-5 w-5" /> Step 3 — Semantic retrieve
           </CardTitle>
           <CardDescription>
-            Search the slide-template library. The query is matched independently against each of the
-            four fields and returns a separate ranked list per field.
+            Test the production <code>/kb/retrieve</code> route. Pick one embedded field, optionally apply
+            a metadata filter, and toggle LLM reasoning. Returns a single ranked list.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -650,6 +658,21 @@ const AdminPanel = () => {
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
+            <div className="w-48">
+              <label className="mb-1 block text-sm text-muted-foreground">Vector field</label>
+              <select
+                value={vectorField}
+                onChange={(e) => setVectorField(e.target.value as VectorField)}
+                disabled={retrieving}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                {EMBED_FIELDS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="w-24">
               <label className="mb-1 block text-sm text-muted-foreground">Top K</label>
               <input
@@ -662,72 +685,126 @@ const AdminPanel = () => {
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
-            <Button onClick={handleRetrieve} disabled={retrieving || !query.trim()}>
-              {retrieving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" /> Search
-                </>
-              )}
-            </Button>
           </div>
 
-          {retrieveResults &&
-            EMBED_FIELDS.map((field) => {
-              const hits = retrieveResults[field] ?? [];
-              return (
-                <div key={field}>
-                  <h3 className="mb-2 text-sm font-semibold">
-                    {field}{" "}
-                    <span className="text-muted-foreground">({hits.length})</span>
-                  </h3>
-                  {hits.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hits.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Score</TableHead>
-                          <TableHead>Layout</TableHead>
-                          <TableHead>Section</TableHead>
-                          <TableHead>Summary</TableHead>
-                          <TableHead>File</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {hits.map((h) => (
-                          <TableRow key={`${field}-${h.template_id}`}>
-                            <TableCell>{h.score?.toFixed(3)}</TableCell>
-                            <TableCell>{h.layout_family ?? "—"}</TableCell>
-                            <TableCell>{h.section_label ?? "—"}</TableCell>
-                            <TableCell className="max-w-[280px] truncate">
-                              {h.content_summary ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                              {h.raw_file_link ? (
-                                <a
-                                  href={h.raw_file_link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-primary hover:underline"
-                                >
-                                  Open <ExternalLink className="h-3 w-3" />
-                                </a>
-                              ) : (
-                                "—"
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
+          <div>
+            <label className="mb-1 block text-sm text-muted-foreground">
+              Filter (JSON, optional) — e.g. {`{ "File-Type": "repository", "layout_family": "title" }`}
+            </label>
+            <textarea
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              placeholder={`{ "layout_family": "title", "tags": { "$in": ["kpi"] } }`}
+              disabled={retrieving}
+              rows={2}
+              className="w-full rounded-md border bg-background px-3 py-2 font-mono text-xs"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={withReasoning}
+                onChange={(e) => setWithReasoning(e.target.checked)}
+                disabled={retrieving}
+              />
+              With LLM Reasoning
+            </label>
+            {withReasoning && (
+              <textarea
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                placeholder="Additional information for the reasoning model (optional)…"
+                disabled={retrieving}
+                rows={2}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            )}
+          </div>
+
+          <Button onClick={handleRetrieve} disabled={retrieving || !query.trim()}>
+            {retrieving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" /> Search
+              </>
+            )}
+          </Button>
+
+          {retrieveResults && (
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">
+                {vectorField}{" "}
+                <span className="text-muted-foreground">({retrieveResults.length})</span>
+              </h3>
+              {retrieveResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No hits.</p>
+              ) : (
+                <div className="space-y-3">
+                  {retrieveResults.map((h) => (
+                    <div key={h.slide_doc_id} className="rounded-md border p-3 text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary">score {h.score?.toFixed(3)}</Badge>
+                        <Badge variant="outline">{h.layout_family ?? "—"}</Badge>
+                        <Badge variant="outline">{h.section_label ?? "—"}</Badge>
+                        {h.llm_reasoning?.match_quality && (
+                          <Badge
+                            variant={
+                              h.llm_reasoning.is_strong_match ? "default" : "secondary"
+                            }
+                          >
+                            {h.llm_reasoning.match_quality}
+                          </Badge>
+                        )}
+                        <div className="ml-auto flex items-center gap-3">
+                          {h.raw_file_link && (
+                            <a
+                              href={h.raw_file_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              Open file <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                          <button
+                            onClick={() => openSlideDetail(h.slide_detailed_info)}
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            Open detail <ExternalLink className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-2 text-muted-foreground">
+                        {h.content_summary ?? "—"}
+                      </p>
+                      {h.llm_reasoning && (
+                        <div className="mt-2 rounded bg-muted/50 p-2">
+                          <p className="text-foreground">{h.llm_reasoning.reasoning}</p>
+                          {!!h.llm_reasoning.key_alignments?.length && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              <span className="font-semibold">Aligns:</span>{" "}
+                              {h.llm_reasoning.key_alignments.join("; ")}
+                            </p>
+                          )}
+                          {!!h.llm_reasoning.gaps?.length && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              <span className="font-semibold">Gaps:</span>{" "}
+                              {h.llm_reasoning.gaps.join("; ")}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
