@@ -6,8 +6,11 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { NavLink } from "@/components/NavLink";
-import { Link } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { getAuth, getAccessToken, getActiveChatId, setActiveChatId, clearAuth } from "@/lib/auth";
+import { toast } from "@/components/ui/sonner";
+import ReasoningWindow from "@/components/chat/ReasoningWindow";
+import TypingDots from "@/components/chat/TypingDots";
 import logo from "@/assets/lamlogo.png";
 
 // Check if a message looks like a report (longer content with structure)
@@ -366,6 +369,9 @@ interface Message {
   hasDocument?: boolean;
   docName?: string;
   payload?: any; // Store generation payload
+  reasoning?: string; // accumulated extended-thinking text
+  reasoningMs?: number; // elapsed thinking duration (ms)
+  reasoningTokens?: number; // estimated reasoning token count
 }
 
 interface Chat {
@@ -376,6 +382,34 @@ interface Chat {
   is_ready?: boolean;
   is_available?: boolean;
   report_link?: string;
+  hasUnread?: boolean; // a background generation finished while away
+}
+
+// Live, per-session streaming record. Lives outside React state so multiple
+// chats can stream concurrently in the background without re-render churn.
+interface SessionStream {
+  sessionId: string;
+  aiMessageId: string;
+  abort: AbortController;
+  incoming: string; // raw answer tokens accumulated
+  rendered: string; // typewriter-revealed answer (active chat only)
+  reasoning: string; // accumulated reasoning tokens
+  reasoningStartMs: number | null; // perf ts of first reasoning delta
+  reasoningMs: number; // frozen elapsed once answer starts
+  elapsed: number; // live seconds counter
+  phase: "streaming" | "done"; // reasoning phase
+  answerStarted: boolean; // first answer token seen
+  active: boolean; // overall stream still running
+  timer: number | null; // elapsed ticker id
+}
+
+// What the visible (active) chat's reasoning panel renders from.
+interface ReasoningView {
+  aiMessageId: string;
+  phase: "streaming" | "done";
+  text: string;
+  elapsedSeconds: number;
+  tokenEst: number;
 }
 
 interface ChatStreamResult {
@@ -417,54 +451,161 @@ const TryUs = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const step6IntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isThinkingActiveRef = useRef(false);
 
   // Report generation progress
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<string>("");
   const [eshmunGenerating, setEshmunGenerating] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const sseAbortRef = useRef<AbortController | null>(null);
 
-  // Streaming state
+  // Routing: the active session id is reflected in the URL (/try/:sessionId).
+  const { sessionId: routeSessionId } = useParams();
+  const navigate = useNavigate();
+
+  // Streaming state. `streamsRef` is the source of truth for live (possibly
+  // background) streams keyed by session id; `streamText` / `streamingMessageId`
+  // / `reasoningView` mirror only the *active* chat for rendering.
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [streamText, setStreamText] = useState("");
-  const incomingRef = useRef("");
-  const renderedRef = useRef("");
-  const animationRef = useRef<number>();
-  const isStreamingRef = useRef(false);
-  const loadedConversationRef = useRef<string>("");
+  const [reasoningView, setReasoningView] = useState<ReasoningView | null>(null);
+  const [expandedReasoning, setExpandedReasoning] = useState<Set<string>>(new Set());
+  // Sessions whose generation is being recovered via polling (after a reload
+  // landed on a thread the backend was still generating server-side).
+  const [generatingSessions, setGeneratingSessions] = useState<Set<string>>(new Set());
+  // Session ids whose messages are already populated this session. Kept as a
+  // Set so revisiting a thread doesn't refetch from the backend and clobber
+  // client-only reasoning panels (reasoning is not persisted server-side).
+  const loadedConversationRef = useRef<Set<string>>(new Set());
+  const streamsRef = useRef<Map<string, SessionStream>>(new Map());
+  const activeChatRef = useRef<string>("");
+  const renderLoopRef = useRef<number>();
+  const chatsRef = useRef<Chat[]>([]);
+  const generationPollRef = useRef<Map<string, number>>(new Map());
 
-  // Smooth streaming render loop - keeps running while streaming
-  const startRenderLoop = () => {
-    isStreamingRef.current = true;
-    const MAX_CHARS_PER_FRAME = 3; // Slower for smoother effect
+  const estimateTokens = (s: string) => Math.round(s.length / 4);
 
-    const renderFrame = () => {
-      if (!isStreamingRef.current) return;
+  const reasoningViewFromRec = (rec: SessionStream): ReasoningView => ({
+    aiMessageId: rec.aiMessageId,
+    phase: rec.phase,
+    text: rec.reasoning,
+    elapsedSeconds: rec.phase === "done" ? Math.round(rec.reasoningMs / 1000) : rec.elapsed,
+    tokenEst: estimateTokens(rec.reasoning),
+  });
 
-      const incoming = incomingRef.current;
-      const rendered = renderedRef.current;
+  const toggleReasoning = (id: string) =>
+    setExpandedReasoning((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
-      if (rendered.length < incoming.length) {
-        const nextChars = incoming.slice(rendered.length, rendered.length + MAX_CHARS_PER_FRAME);
-        renderedRef.current += nextChars;
-        setStreamText(renderedRef.current);
+  // Per-session elapsed-seconds ticker (drives the "Thinking… Ns" counter).
+  const startTicker = (rec: SessionStream) => {
+    if (rec.timer != null) return;
+    rec.timer = window.setInterval(() => {
+      rec.elapsed += 1;
+      if (rec.phase === "streaming" && activeChatRef.current === rec.sessionId) {
+        setReasoningView(reasoningViewFromRec(rec));
       }
-
-      // Keep loop running while streaming is active
-      animationRef.current = requestAnimationFrame(renderFrame);
-    };
-
-    animationRef.current = requestAnimationFrame(renderFrame);
+    }, 1000);
+  };
+  const stopTicker = (rec: SessionStream) => {
+    if (rec.timer != null) {
+      window.clearInterval(rec.timer);
+      rec.timer = null;
+    }
   };
 
-  const stopRenderLoop = () => {
-    isStreamingRef.current = false;
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = undefined;
+  // Smooth typewriter for the *active* chat's answer tokens.
+  const pumpRenderLoop = () => {
+    const rec = streamsRef.current.get(activeChatRef.current);
+    if (rec) {
+      const MAX_CHARS_PER_FRAME = 3;
+      if (rec.rendered.length < rec.incoming.length) {
+        rec.rendered = rec.incoming.slice(0, rec.rendered.length + MAX_CHARS_PER_FRAME);
+        setStreamText(rec.rendered);
+      }
+      if (rec.active || rec.rendered.length < rec.incoming.length) {
+        renderLoopRef.current = requestAnimationFrame(pumpRenderLoop);
+        return;
+      }
     }
+    renderLoopRef.current = undefined;
+  };
+  const ensureRenderLoop = () => {
+    if (renderLoopRef.current == null) {
+      renderLoopRef.current = requestAnimationFrame(pumpRenderLoop);
+    }
+  };
+
+  const notifyChatDone = (sessionId: string) => {
+    const chat = chatsRef.current.find((c) => c.id === sessionId);
+    toast.success("Response ready", {
+      description: chat?.title || "A background chat finished generating.",
+      action: {
+        label: "View",
+        onClick: () => {
+          setActiveChat(sessionId);
+          navigate(`/${sessionId}`);
+        },
+      },
+    });
+  };
+
+  const stopGenerationPoll = (sessionId: string) => {
+    const id = generationPollRef.current.get(sessionId);
+    if (id != null) {
+      window.clearInterval(id);
+      generationPollRef.current.delete(sessionId);
+    }
+    setGeneratingSessions((prev) => {
+      if (!prev.has(sessionId)) return prev;
+      const next = new Set(prev);
+      next.delete(sessionId);
+      return next;
+    });
+  };
+
+  // Recover a server-side generation we can't live-stream (page was reloaded
+  // mid-generation): poll the session until the assistant message stops being
+  // "generating", refreshing its (progressively saved) content each tick.
+  const startGenerationPoll = (sessionId: string) => {
+    if (generationPollRef.current.has(sessionId)) return;
+    setGeneratingSessions((prev) => new Set(prev).add(sessionId));
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`${BACKEND_API_URL}/chat/sessions/${sessionId}`, {
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const raw = (data.messages || []).filter(
+          (m: any) => m.role === "user" || m.role === "assistant"
+        );
+        const mapped: Message[] = raw.map((m: any, idx: number) => ({
+          id: m.id || `${sessionId}-${idx}`,
+          role: m.role,
+          content: m.content,
+          hasDocument: Boolean(m.has_document),
+          docName: m.doc_name || undefined,
+          timestamp: new Date(),
+        }));
+        setChats((prev) =>
+          prev.map((c) => (c.id === sessionId ? { ...c, messages: mapped } : c))
+        );
+        const lastAssistant = [...raw].reverse().find((m: any) => m.role === "assistant");
+        if (!lastAssistant || lastAssistant.status !== "generating") {
+          stopGenerationPoll(sessionId);
+        }
+      } catch {
+        // transient; keep polling
+      }
+    };
+
+    const id = window.setInterval(poll, 2500);
+    generationPollRef.current.set(sessionId, id);
+    poll();
   };
 
   // Initialize mobile state immediately from window to prevent flicker
@@ -487,11 +628,22 @@ const TryUs = () => {
     Authorization: `Bearer ${getAccessToken()}`,
   });
 
-  // Cleanup on unmount
+  // Keep a ref mirror of chats for async stream callbacks (titles, lookups).
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
+
+  // Cleanup on unmount: close websocket and abort every in-flight stream.
   useEffect(() => {
     return () => {
       if (wsRef.current) wsRef.current.close();
-      if (sseAbortRef.current) sseAbortRef.current.abort();
+      streamsRef.current.forEach((s) => {
+        s.abort.abort();
+        if (s.timer != null) window.clearInterval(s.timer);
+      });
+      generationPollRef.current.forEach((id) => window.clearInterval(id));
+      generationPollRef.current.clear();
+      if (renderLoopRef.current) cancelAnimationFrame(renderLoopRef.current);
     };
   }, []);
 
@@ -510,9 +662,9 @@ const TryUs = () => {
         name: auth.fullName || auth.email.split("@")[0],
         email: auth.email,
       });
-      const storedSessionId = getActiveChatId();
-      if (storedSessionId) {
-        setActiveChat(storedSessionId);
+      const initialId = routeSessionId || getActiveChatId();
+      if (initialId) {
+        setActiveChat(initialId);
       }
       return;
     }
@@ -556,11 +708,22 @@ const TryUs = () => {
           createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
         }));
 
+        // A deep-linked session that the user owns but isn't in the summary
+        // list (rare) still gets a stub row so it can load + display.
+        if (routeSessionId && !restoredChats.some((c) => c.id === routeSessionId)) {
+          restoredChats.unshift({
+            id: routeSessionId,
+            title: "Conversation",
+            messages: [],
+            createdAt: new Date(),
+          });
+        }
+
         setChats(restoredChats);
 
-        const storedSessionId = getActiveChatId();
-        const hasStored = storedSessionId && restoredChats.some((c) => c.id === storedSessionId);
-        setActiveChat(hasStored ? storedSessionId : restoredChats[0].id);
+        const preferred = routeSessionId || getActiveChatId();
+        const hasPreferred = preferred && restoredChats.some((c) => c.id === preferred);
+        setActiveChat(hasPreferred ? preferred! : restoredChats[0].id);
         setThreadsLoaded(true);
       } catch (err) {
         console.error("Failed to load chat threads:", err);
@@ -571,9 +734,46 @@ const TryUs = () => {
     loadChatThreads();
   }, [accessToken]);
 
+  // Persist + reflect the active session in the URL.
   useEffect(() => {
     if (!activeChat) return;
     setActiveChatId(activeChat);
+    if (routeSessionId !== activeChat) {
+      navigate(`/${activeChat}`, { replace: true });
+    }
+  }, [activeChat]);
+
+  // Browser back/forward (URL changes) -> switch the active chat.
+  useEffect(() => {
+    if (routeSessionId && routeSessionId !== activeChat) {
+      setActiveChat(routeSessionId);
+    }
+  }, [routeSessionId]);
+
+  // Rebind the visible streaming UI whenever the active chat changes. A chat
+  // that is still generating in the background re-attaches to its live record
+  // so its reasoning keeps streaming; clears the unread badge for what we view.
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+    const rec = streamsRef.current.get(activeChat);
+    if (rec && rec.active) {
+      rec.rendered = rec.incoming; // snap to full so there is no replay
+      setStreamingMessageId(rec.aiMessageId);
+      setStreamText(rec.rendered);
+      setReasoningView(rec.reasoning || rec.phase === "streaming" ? reasoningViewFromRec(rec) : null);
+      setIsTyping(true);
+      ensureRenderLoop();
+    } else {
+      setStreamingMessageId(null);
+      setStreamText("");
+      setReasoningView(null);
+      setIsTyping(false);
+    }
+    setChats((prev) =>
+      prev.some((c) => c.id === activeChat && c.hasUnread)
+        ? prev.map((c) => (c.id === activeChat ? { ...c, hasUnread: false } : c))
+        : prev
+    );
   }, [activeChat]);
 
   const currentChat = chats.find((c) => c.id === activeChat);
@@ -582,7 +782,7 @@ const TryUs = () => {
     const controller = new AbortController();
     const loadConversation = async () => {
       if (!threadsLoaded || !activeChat || !accessToken) return;
-      if (loadedConversationRef.current === activeChat) return;
+      if (loadedConversationRef.current.has(activeChat)) return;
 
       try {
         const res = await fetch(`${BACKEND_API_URL}/chat/sessions/${activeChat}`, {
@@ -619,7 +819,20 @@ const TryUs = () => {
         } else if (data.eshmunReportGeneratingStatus === "completed") {
           setEshmunGenerating(false);
         }
-        loadedConversationRef.current = activeChat;
+        // If the backend is still generating this thread server-side and we have
+        // no live in-browser stream for it (e.g. after a reload), recover via
+        // polling so the final answer still lands.
+        const lastAssistant = [...(data.messages || [])]
+          .reverse()
+          .find((m: any) => m.role === "assistant");
+        if (
+          lastAssistant &&
+          lastAssistant.status === "generating" &&
+          !streamsRef.current.has(activeChat)
+        ) {
+          startGenerationPoll(activeChat);
+        }
+        loadedConversationRef.current.add(activeChat);
       } catch (err) {
         if ((err as Error).name === "AbortError") {
           return;
@@ -914,15 +1127,11 @@ const TryUs = () => {
 
   const streamChatOverSSE = async (
     sessionId: string,
+    rec: SessionStream,
     message: string,
     usersDocumentId?: string
   ): Promise<ChatStreamResult> => {
     if (!getAccessToken()) throw new Error("Please sign in first.");
-
-    // Cancel any previous stream
-    if (sseAbortRef.current) sseAbortRef.current.abort();
-    const abort = new AbortController();
-    sseAbortRef.current = abort;
 
     const body: Record<string, any> = { session_id: sessionId, user_message: message };
     if (usersDocumentId) body.users_document_id = usersDocumentId;
@@ -931,13 +1140,15 @@ const TryUs = () => {
       method: "POST",
       headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: abort.signal,
+      signal: rec.abort.signal,
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => null);
       throw new Error(err?.detail || `Chat error: ${response.status}`);
     }
+
+    const isActive = () => activeChatRef.current === sessionId;
 
     return new Promise<ChatStreamResult>((resolve, reject) => {
       const reader = response.body!.getReader();
@@ -959,32 +1170,46 @@ const TryUs = () => {
         try {
           const parsed = JSON.parse(data);
           if (eventName === "token") {
-            // First token collapses any thinking UI
-            if (isThinkingActiveRef.current) {
-              isThinkingActiveRef.current = false;
-              setIsThinkingExpanded(false);
-              setThinkingText("");
+            // First answer token: freeze the reasoning timer and collapse the
+            // panel to "Thought for Ns" (kept). If no reasoning ever streamed,
+            // drop the panel entirely so we don't show a stuck "Thinking…".
+            if (!rec.answerStarted) {
+              rec.answerStarted = true;
+              stopTicker(rec);
+              if (rec.reasoningStartMs != null) {
+                rec.reasoningMs = performance.now() - rec.reasoningStartMs;
+                rec.phase = "done";
+              }
+              if (isActive()) {
+                setReasoningView(rec.reasoning ? reasoningViewFromRec(rec) : null);
+              }
             }
-            incomingRef.current += parsed.content || "";
+            rec.incoming += parsed.content || "";
+            if (isActive()) ensureRenderLoop();
           } else if (eventName === "thinking") {
-            const content = (parsed.content || "").trim();
+            // Token-stream reasoning: APPEND (never replace), keep whitespace.
+            const content = parsed.content || "";
             if (content) {
-              setThinkingText(content);
-              setIsThinkingExpanded(true);
-              isThinkingActiveRef.current = true;
+              if (rec.reasoningStartMs == null) {
+                rec.reasoningStartMs = performance.now();
+                startTicker(rec);
+              }
+              rec.reasoning += content;
+              rec.phase = "streaming";
+              if (isActive()) setReasoningView(reasoningViewFromRec(rec));
             }
           } else if (eventName === "progress") {
+            // Report-generation progress status (separate from LLM reasoning).
             const content = (parsed.content || "").trim();
-            if (content) {
+            if (content && isActive()) {
               setThinkingText(content);
               setIsThinkingExpanded(true);
-              isThinkingActiveRef.current = true;
             }
           } else if (eventName === "done") {
-            if (parsed.eshmunReportGeneratingStatus === "in_progress") {
+            if (parsed.eshmunReportGeneratingStatus === "in_progress" && isActive()) {
               setEshmunGenerating(true);
             }
-            const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(incomingRef.current)));
+            const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(rec.incoming)));
             finish({
               response: cleaned,
               title: parsed.title,
@@ -1005,7 +1230,7 @@ const TryUs = () => {
             if (done) {
               parser.flush();
               if (!resolved) {
-                const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(incomingRef.current)));
+                const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(rec.incoming)));
                 finish({ response: cleaned || "No response" });
               }
               break;
@@ -1015,12 +1240,138 @@ const TryUs = () => {
         } catch (e) {
           if ((e as Error).name !== "AbortError") {
             fail(e instanceof Error ? e.message : "Stream read error");
+          } else {
+            fail("AbortError");
           }
         }
       };
 
       pump();
     });
+  };
+
+  // Shared driver for send + regenerate: creates the per-session record, binds
+  // the UI if this is the active chat, runs the stream (which keeps going even
+  // if the user navigates away), then persists the final answer + reasoning and
+  // notifies if the user is elsewhere.
+  const runStream = async (
+    sessionId: string,
+    aiMessageId: string,
+    exec: (rec: SessionStream) => Promise<ChatStreamResult>
+  ) => {
+    const prior = streamsRef.current.get(sessionId);
+    if (prior) {
+      prior.abort.abort();
+      stopTicker(prior);
+    }
+
+    const rec: SessionStream = {
+      sessionId,
+      aiMessageId,
+      abort: new AbortController(),
+      incoming: "",
+      rendered: "",
+      reasoning: "",
+      reasoningStartMs: null,
+      reasoningMs: 0,
+      elapsed: 0,
+      phase: "streaming",
+      answerStarted: false,
+      active: true,
+      timer: null,
+    };
+    streamsRef.current.set(sessionId, rec);
+    // We now drive this thread's state locally; don't let a later visit refetch
+    // and clobber the streamed message + its reasoning panel.
+    loadedConversationRef.current.add(sessionId);
+
+    if (activeChatRef.current === sessionId) {
+      setStreamingMessageId(aiMessageId);
+      setStreamText("");
+      setReasoningView(reasoningViewFromRec(rec));
+      setIsTyping(true);
+    }
+    startTicker(rec); // count "Thinking… Ns" from dispatch
+
+    try {
+      const result = await exec(rec);
+      const responseText = result.response || "No response";
+      rec.incoming = rec.incoming || responseText;
+      rec.rendered = rec.incoming;
+      rec.active = false;
+      stopTicker(rec);
+      if (rec.reasoningStartMs != null && rec.reasoningMs === 0) {
+        rec.reasoningMs = performance.now() - rec.reasoningStartMs;
+        rec.phase = "done";
+      }
+      const reasoningText = rec.reasoning || undefined;
+      const reasoningMs = rec.reasoningMs;
+      const reasoningTokens = estimateTokens(rec.reasoning);
+      const wasActive = activeChatRef.current === sessionId;
+
+      const kotharFinal = (result.agentFinals || []).find(
+        (f: Record<string, any>) => f.agent === "kothar" && f.report_url
+      );
+      const eshmunFinal = (result.agentFinals || []).find(
+        (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
+      );
+
+      setChats((prev) =>
+        prev.map((chat) => {
+          if (chat.id !== sessionId) return chat;
+          return {
+            ...chat,
+            ...(kotharFinal?.report_url
+              ? { is_ready: true, report_link: kotharFinal.report_url }
+              : {}),
+            ...(wasActive ? {} : { hasUnread: true }),
+            messages: chat.messages.map((m) =>
+              m.id === aiMessageId
+                ? { ...m, content: responseText, reasoning: reasoningText, reasoningMs, reasoningTokens }
+                : m
+            ),
+            title: result.title || chat.title,
+          };
+        })
+      );
+
+      if (eshmunFinal && wasActive) setEshmunGenerating(true);
+
+      if (wasActive) {
+        setStreamingMessageId(null);
+        setReasoningView(null); // the persisted per-message panel takes over
+        setIsTyping(false);
+      } else {
+        notifyChatDone(sessionId);
+      }
+    } catch (error) {
+      rec.active = false;
+      stopTicker(rec);
+      if ((error as Error).message === "AbortError") {
+        streamsRef.current.delete(sessionId);
+        return;
+      }
+      const msg = error instanceof Error ? error.message : "Chat failed";
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === sessionId
+            ? {
+                ...chat,
+                messages: chat.messages.map((m) =>
+                  m.id === aiMessageId ? { ...m, content: msg } : m
+                ),
+              }
+            : chat
+        )
+      );
+      if (activeChatRef.current === sessionId) {
+        setStreamingMessageId(null);
+        setReasoningView(null);
+        setIsTyping(false);
+      }
+    } finally {
+      streamsRef.current.delete(sessionId);
+    }
   };
 
   const handleFileSelect = async (file: File | null) => {
@@ -1060,7 +1411,9 @@ const TryUs = () => {
       return;
     }
 
+    const sessionId = activeChat;
     const text = input.trim() || (selectedFile ? `Analyze uploaded document: ${selectedFile.name}` : "");
+    const docId = uploadedDocumentId || undefined;
     const userMessageId = `${Date.now()}-user`;
     const userMessage: Message = {
       id: userMessageId,
@@ -1070,26 +1423,6 @@ const TryUs = () => {
       docName: selectedFile?.name,
       timestamp: new Date(),
     };
-
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === activeChat
-          ? {
-              ...chat,
-              messages: [...chat.messages, userMessage],
-              title:
-                chat.messages.length === 0 && chat.title === "New conversation" && text
-                  ? text.slice(0, 30) + "..."
-                  : chat.title,
-            }
-          : chat
-      )
-    );
-
-    setInput("");
-    setIsTyping(true);
-    setThinkingText("");
-    setIsThinkingExpanded(false);
 
     const aiMessageId = `${Date.now()}-assistant`;
     const aiMessage: Message = {
@@ -1101,75 +1434,28 @@ const TryUs = () => {
 
     setChats((prev) =>
       prev.map((chat) =>
-        chat.id === activeChat ? { ...chat, messages: [...chat.messages, aiMessage] } : chat
+        chat.id === sessionId
+          ? {
+              ...chat,
+              messages: [...chat.messages, userMessage, aiMessage],
+              title:
+                chat.messages.length === 0 && chat.title === "New conversation" && text
+                  ? text.slice(0, 30) + "..."
+                  : chat.title,
+            }
+          : chat
       )
     );
 
-    setStreamingMessageId(aiMessageId);
-    setStreamText("");
-    incomingRef.current = "";
-    renderedRef.current = "";
-    startRenderLoop();
+    setInput("");
+    setSelectedFile(null);
+    setUploadedDocumentId("");
+    setThinkingText("");
+    setIsThinkingExpanded(false);
 
-    try {
-      const sseResult = await streamChatOverSSE(
-        activeChat,
-        text,
-        uploadedDocumentId || undefined
-      );
-      const responseText = sseResult.response || "No response";
-      const generatedTitle = sseResult.title;
-
-      // Extract Kothar report URL from agentFinals
-      const kotharFinal = (sseResult.agentFinals || []).find(
-        (f: Record<string, any>) => f.agent === "kothar" && f.report_url
-      );
-
-      // Detect eshmun fire-and-forget dispatch
-      const eshmunFinal = (sseResult.agentFinals || []).find(
-        (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
-      );
-      if (eshmunFinal) setEshmunGenerating(true);
-
-      stopRenderLoop();
-      setStreamText(responseText);
-      setChats((prev) =>
-        prev.map((chat) => {
-          if (chat.id !== activeChat) return chat;
-          return {
-            ...chat,
-            ...(kotharFinal?.report_url ? { is_ready: true, report_link: kotharFinal.report_url } : {}),
-            messages: chat.messages.map((m) =>
-              m.id === aiMessageId ? { ...m, content: responseText } : m
-            ),
-            title: generatedTitle || chat.title,
-          };
-        })
-      );
-      setSelectedFile(null);
-      setUploadedDocumentId("");
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Chat failed";
-      stopRenderLoop();
-      setStreamText(msg);
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === activeChat
-            ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === aiMessageId ? { ...m, content: msg } : m
-                ),
-              }
-            : chat
-        )
-      );
-    } finally {
-      setStreamingMessageId(null);
-      setThinkingText("");
-      setIsThinkingExpanded(false);
-      setIsTyping(false);
-    }
+    await runStream(sessionId, aiMessageId, (rec) =>
+      streamChatOverSSE(sessionId, rec, text, docId)
+    );
   };
 
   const createSessionId = () => {
@@ -1196,6 +1482,16 @@ const TryUs = () => {
   const handleDeleteChat = async (chatId: string) => {
     if (!confirm("Are you sure you want to delete this chat?")) return;
     if (!accessToken) return;
+
+    // Tear down any in-flight stream / recovery poll for this chat.
+    const rec = streamsRef.current.get(chatId);
+    if (rec) {
+      rec.abort.abort();
+      stopTicker(rec);
+      streamsRef.current.delete(chatId);
+    }
+    stopGenerationPoll(chatId);
+    loadedConversationRef.current.delete(chatId);
 
     try {
       await fetch(`${BACKEND_API_URL}/chat/sessions/${chatId}`, {
@@ -1236,12 +1532,12 @@ const TryUs = () => {
   const handleRegenerate = async (message: Message) => {
     if (!activeChat || !currentChat || !accessToken) return;
 
+    const sessionId = activeChat;
     const messageIndex = currentChat.messages.findIndex((m) => m.id === message.id);
     if (!canRegenerateMessage(currentChat, message, messageIndex)) return;
     const previousUser = currentChat.messages[messageIndex - 1];
     if (!previousUser) return;
 
-    setIsTyping(true);
     setThinkingText("");
     setIsThinkingExpanded(false);
     const aiMessageId = `${Date.now()}-assistant`;
@@ -1254,7 +1550,7 @@ const TryUs = () => {
 
     setChats((prev) =>
       prev.map((chat) =>
-        chat.id === activeChat
+        chat.id === sessionId
           ? {
               ...chat,
               messages: [...chat.messages.slice(0, messageIndex), aiMessage],
@@ -1263,40 +1559,9 @@ const TryUs = () => {
       )
     );
 
-    setStreamingMessageId(aiMessageId);
-    setStreamText("");
-    incomingRef.current = "";
-    renderedRef.current = "";
-    startRenderLoop();
-
-    try {
-      const sseResult = await streamChatOverSSE(activeChat, previousUser.content);
-      const responseText = sseResult.response || "No response";
-      const generatedTitle = sseResult.title;
-
-      stopRenderLoop();
-      setStreamText(responseText);
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === activeChat
-            ? {
-                ...chat,
-                messages: chat.messages.map((m) =>
-                  m.id === aiMessageId ? { ...m, content: responseText } : m
-                ),
-                title: generatedTitle || chat.title,
-              }
-            : chat
-        )
-      );
-    } catch (error) {
-      console.error("Error regenerating response:", error);
-    } finally {
-      setStreamingMessageId(null);
-      setThinkingText("");
-      setIsThinkingExpanded(false);
-      setIsTyping(false);
-    }
+    await runStream(sessionId, aiMessageId, (rec) =>
+      streamChatOverSSE(sessionId, rec, previousUser.content)
+    );
   };
 
   const handleRenameChat = async (chatId: string) => {
@@ -1448,6 +1713,12 @@ const TryUs = () => {
                   className="w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 text-sm text-gray-700"
                 >
                   <span className="truncate flex-1">{chat.title}</span>
+                  {chat.hasUnread && (
+                    <span
+                      className="w-2 h-2 rounded-full bg-accent flex-shrink-0"
+                      title="New response ready"
+                    />
+                  )}
                 </button>
 
                 <DropdownMenu>
@@ -1529,6 +1800,32 @@ const TryUs = () => {
                   }`}
                 >
                   <div className="flex flex-col min-w-0 flex-1">
+                    {message.role === "assistant" && (() => {
+                      const live =
+                        reasoningView && reasoningView.aiMessageId === message.id
+                          ? reasoningView
+                          : null;
+                      const phase = live ? live.phase : "done";
+                      const text = live ? live.text : message.reasoning || "";
+                      const hasReasoning = live
+                        ? live.phase === "streaming" || text.length > 0
+                        : Boolean(message.reasoning);
+                      if (!hasReasoning) return null;
+                      return (
+                        <div className="mb-3 max-w-[90%] md:max-w-[85%]">
+                          <ReasoningWindow
+                            phase={phase}
+                            text={text}
+                            elapsedSeconds={
+                              live ? live.elapsedSeconds : Math.round((message.reasoningMs || 0) / 1000)
+                            }
+                            tokenEst={live ? live.tokenEst : message.reasoningTokens || 0}
+                            expanded={expandedReasoning.has(message.id)}
+                            onToggle={() => toggleReasoning(message.id)}
+                          />
+                        </div>
+                      );
+                    })()}
                     <div
                       className={`rounded-2xl px-3 md:px-4 py-2 md:py-3 ${
                         message.role === "user"
@@ -1556,6 +1853,11 @@ const TryUs = () => {
                           >
                             {renderedAssistantText}
                           </ReactMarkdown>
+                          {streamingMessageId === message.id && (
+                            // Keeps signalling "still working" even during silent
+                            // gaps (e.g. while the orchestrator runs a tool call).
+                            <TypingDots />
+                          )}
                         </div>
                       ) : (
                         <>
@@ -1587,9 +1889,9 @@ const TryUs = () => {
                         </div>
                       )}
                     </div>
-                    {message.role === "assistant" && (() => {
-                      const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") || 
-                                             message.content.toLowerCase().includes("our servers are overloaded") || 
+                    {message.role === "assistant" && streamingMessageId !== message.id && (() => {
+                      const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") ||
+                                             message.content.toLowerCase().includes("our servers are overloaded") ||
                                              message.content.toLowerCase().includes("please try again");
                       const isEmptyResponse = message.content.trim() === "";
                       const showAlways = (isErrorMessage || isEmptyResponse) && isLastAssistantMessage;
@@ -1661,29 +1963,18 @@ const TryUs = () => {
                 </div>
                 );
               })}
-              {isTyping && (
+              {/* Recovering a server-side generation after a reload (no live stream). */}
+              {generatingSessions.has(activeChat) && (
                 <div className="flex gap-2 md:gap-4">
-                  <div className="flex flex-col flex-1">
-                    <button
-                      onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <span className="inline-block w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
-                      <span>Thinking{thinkingText ? "..." : "..."}</span>
-                      {thinkingText && (
-                        <span className="text-xs">
-                          {isThinkingExpanded ? "▼" : "▶"}
-                        </span>
-                      )}
-                    </button>
-                    {isThinkingExpanded && thinkingText && (
-                      <div className="mt-2 text-sm leading-relaxed text-muted-foreground bg-secondary/30 rounded-lg p-4 w-full max-w-3xl max-h-96 overflow-y-auto whitespace-pre-wrap">
-                        {thinkingText}
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="inline-block w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                    <span>Generating…</span>
                   </div>
                 </div>
               )}
+              {/* LLM reasoning now renders inline per assistant message via
+                  <ReasoningWindow>. The block below remains for report-
+                  generation progress status (driven by thinkingText). */}
               {!isTyping && !isGenerating && thinkingText && (
                 <div className="flex gap-2 md:gap-4">
                   <div className="flex flex-col gap-2 flex-1">

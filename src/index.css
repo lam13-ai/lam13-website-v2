@@ -179,6 +179,23 @@ All colors MUST be HSL.
     }
   }
 
+  /* Reasoning window (token-streaming thinking panel) */
+  @keyframes rw-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes rw-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Soft sequential pulse for the "typing" dots while an answer generates.
+     Opacity-only (no bounce) — calm and readable over long tool-call gaps. */
+  @keyframes rw-dot {
+    0%, 70%, 100% { opacity: 0.2; }
+    35% { opacity: 0.85; }
+  }
+
   @keyframes typewriter {
     from {
       width: 0;

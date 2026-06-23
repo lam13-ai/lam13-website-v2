@@ -38,6 +38,9 @@ const App = () => (
             <Route path="api-keys" element={<AdminApiKeys />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Root-level session id (e.g. /e425105...). Static routes above rank
+              higher in React Router, so this only catches a bare session id. */}
+          <Route path="/:sessionId" element={<TryUs />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
