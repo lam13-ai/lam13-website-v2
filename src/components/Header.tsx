@@ -34,11 +34,6 @@ const Header = () => {
                 Sign In
               </Button>
             </NavLink>
-            <NavLink to="/try">
-              <Button variant="heroOutline" className="group relative overflow-hidden transition-all duration-500">
-                <span className="relative z-10">Test Try</span>
-              </Button>
-            </NavLink>
           </nav>
 
           {/* Empty spacer for mobile to balance the layout */}
@@ -51,11 +46,6 @@ const Header = () => {
               <NavLink to="/auth" className="block" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="bg-accent hover:bg-accent/90 text-accent-foreground w-full">
                   Sign In
-                </Button>
-              </NavLink>
-              <NavLink to="/try" className="block" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button variant="heroOutline" className="group relative overflow-hidden transition-all duration-500 w-full">
-                  <span className="relative z-10">Test Try</span>
                 </Button>
               </NavLink>
             </div>
