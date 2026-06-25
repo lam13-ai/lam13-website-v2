@@ -714,7 +714,8 @@ const TryUs = () => {
         kotharPollRef.current.delete(key);
       }
     };
-    const pollId = window.setInterval(tick, 5000);
+    // Builds run many minutes — poll status every ~90s (not aggressively).
+    const pollId = window.setInterval(tick, 90000);
     kotharPollRef.current.set(key, pollId);
     tick();
   };
