@@ -2176,7 +2176,7 @@ const TryUs = () => {
                 <div className="flex gap-2 md:gap-4">
                   <div className="flex items-center gap-2 text-sm text-blue-600 p-3 bg-blue-50 rounded-lg">
                     <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin flex-shrink-0" />
-                    <span>Your strategy document is being generated and will be sent to your email.</span>
+                    <span>Your strategy document is being generated…</span>
                   </div>
                 </div>
               )}
