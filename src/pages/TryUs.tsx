@@ -10,7 +10,6 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { getAuth, getAccessToken, getActiveChatId, setActiveChatId, clearAuth } from "@/lib/auth";
 import { toast } from "@/components/ui/sonner";
 import ReasoningWindow from "@/components/chat/ReasoningWindow";
-import BuildingWindow from "@/components/chat/BuildingWindow";
 import TypingDots from "@/components/chat/TypingDots";
 import logo from "@/assets/lamlogo.png";
 
@@ -373,12 +372,6 @@ interface Message {
   reasoning?: string; // accumulated extended-thinking text
   reasoningMs?: number; // elapsed thinking duration (ms)
   reasoningTokens?: number; // estimated reasoning token count
-  // Kothar PPTX build, scoped to this assistant message.
-  kotharStatus?: "running" | "completed" | "failed";
-  kotharJobId?: string;
-  kotharPptxUrl?: string;
-  kotharText?: string; // accumulated build log
-  kotharPhase?: string;
 }
 
 interface Chat {
@@ -408,12 +401,6 @@ interface SessionStream {
   answerStarted: boolean; // first answer token seen
   active: boolean; // overall stream still running
   timer: number | null; // elapsed ticker id
-  // Kothar PPTX build progress (forwarded through the chat stream).
-  kotharStatus: "" | "running" | "completed" | "failed";
-  kotharJobId: string;
-  kotharPptxUrl: string;
-  kotharText: string;
-  kotharPhase: string;
 }
 
 // What the visible (active) chat's reasoning panel renders from.
@@ -482,11 +469,6 @@ const TryUs = () => {
   const [streamText, setStreamText] = useState("");
   const [reasoningView, setReasoningView] = useState<ReasoningView | null>(null);
   const [expandedReasoning, setExpandedReasoning] = useState<Set<string>>(new Set());
-  // Per-message Kothar building-window expand state. Live build progress streams
-  // over /chat/stream and is persisted onto the message; reload uses a status poll.
-  const [expandedKothar, setExpandedKothar] = useState<Set<string>>(new Set());
-  // Reload-recovery status pollers, keyed by `${sessionId}:${messageId}` → interval id.
-  const kotharPollRef = useRef<Map<string, number>>(new Map());
   // Sessions whose generation is being recovered via polling (after a reload
   // landed on a thread the backend was still generating server-side).
   const [generatingSessions, setGeneratingSessions] = useState<Set<string>>(new Set());
@@ -509,13 +491,6 @@ const TryUs = () => {
     elapsedSeconds: rec.phase === "done" ? Math.round(rec.reasoningMs / 1000) : rec.elapsed,
     tokenEst: estimateTokens(rec.reasoning),
   });
-
-  const toggleKothar = (id: string) =>
-    setExpandedKothar((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
 
   const toggleReasoning = (id: string) =>
     setExpandedReasoning((prev) => {
@@ -648,8 +623,7 @@ const TryUs = () => {
     Authorization: `Bearer ${getAccessToken()}`,
   });
 
-  // Map a server message DTO to the client Message shape (carries Kothar fields
-  // so a reloaded thread can restore the building window / download button).
+  // Map a server message DTO to the client Message shape.
   const toClientMessage = (m: any, sessionId: string, idx: number): Message => ({
     id: m.id || `${sessionId}-${idx}`,
     role: m.role,
@@ -657,68 +631,7 @@ const TryUs = () => {
     hasDocument: Boolean(m.has_document),
     docName: m.doc_name || undefined,
     timestamp: new Date(),
-    kotharStatus: m.kothar_status || undefined,
-    kotharJobId: m.kothar_job_id || undefined,
-    kotharPptxUrl: m.kothar_pptx_url || undefined,
   });
-
-  const patchMessageKothar = (sessionId: string, messageId: string, patch: Partial<Message>) => {
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === sessionId
-          ? { ...c, messages: c.messages.map((m) => (m.id === messageId ? { ...m, ...patch } : m)) }
-          : c
-      )
-    );
-  };
-
-  // One-shot Kothar status check (also triggers backend reconciliation/finalize).
-  const fetchKotharStatusOnce = async (
-    sessionId: string,
-    messageId: string
-  ): Promise<string | null> => {
-    try {
-      const res = await fetch(`${BACKEND_API_URL}/kothar/status/${sessionId}`, {
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.status === "completed" && data.pptx_url) {
-        patchMessageKothar(sessionId, messageId, {
-          kotharStatus: "completed",
-          kotharPptxUrl: data.pptx_url,
-        });
-      } else if (data.status === "failed") {
-        patchMessageKothar(sessionId, messageId, { kotharStatus: "failed" });
-      } else if (data.last_phase) {
-        patchMessageKothar(sessionId, messageId, { kotharPhase: data.last_phase });
-      }
-      return data.status || null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Reload recovery only: the live build streams over /chat/stream. After a full
-  // page reload that connection is gone, so poll the plain status endpoint until
-  // the deck link appears (or the build fails). No Kothar SSE from the browser.
-  const pollKotharStatus = (sessionId: string, messageId: string) => {
-    const key = `${sessionId}:${messageId}`;
-    if (kotharPollRef.current.has(key)) return;
-
-    const tick = async () => {
-      const status = await fetchKotharStatusOnce(sessionId, messageId);
-      if (status === "completed" || status === "failed") {
-        const id = kotharPollRef.current.get(key);
-        if (id) window.clearInterval(id);
-        kotharPollRef.current.delete(key);
-      }
-    };
-    // Builds run many minutes — poll status every ~90s (not aggressively).
-    const pollId = window.setInterval(tick, 90000);
-    kotharPollRef.current.set(key, pollId);
-    tick();
-  };
 
   // Keep a ref mirror of chats for async stream callbacks (titles, lookups).
   useEffect(() => {
@@ -735,8 +648,6 @@ const TryUs = () => {
       });
       generationPollRef.current.forEach((id) => window.clearInterval(id));
       generationPollRef.current.clear();
-      kotharPollRef.current.forEach((id) => window.clearInterval(id));
-      kotharPollRef.current.clear();
       if (renderLoopRef.current) cancelAnimationFrame(renderLoopRef.current);
     };
   }, []);
@@ -901,15 +812,6 @@ const TryUs = () => {
               : chat
           )
         );
-        // Reload recovery: if a build was still running for this thread and we have
-        // no live chat stream for it, poll status until the deck link appears.
-        if (!streamsRef.current.has(activeChat)) {
-          for (const m of messages) {
-            if (m.kotharStatus === "running") {
-              pollKotharStatus(activeChat, m.id);
-            }
-          }
-        }
         if (data.eshmunReportGeneratingStatus === "in_progress") {
           setEshmunGenerating(true);
         } else if (data.eshmunReportGeneratingStatus === "completed") {
@@ -1294,45 +1196,13 @@ const TryUs = () => {
               setThinkingText(content);
               setIsThinkingExpanded(true);
             }
-          } else if (eventName === "kothar_started") {
-            // Kothar build progress rides THIS chat stream (no separate SSE).
-            const jobId = parsed.job_id || "";
-            rec.kotharStatus = "running";
-            rec.kotharJobId = jobId;
-            rec.kotharText = "";
-            patchMessageKothar(sessionId, rec.aiMessageId, {
-              kotharStatus: "running",
-              kotharJobId: jobId,
-            });
-            // Clear the stale eshmun "Still generating…" line; the building window takes over.
+          } else if (eventName === "done") {
+            // The turn is complete (Eshmun runs inline and has already finished by
+            // now) — clear the "Still generating your strategy document…" progress
+            // so it doesn't hang on screen waiting for nothing.
             if (isActive()) {
               setThinkingText("");
               setEshmunGenerating(false);
-            }
-          } else if (eventName === "kothar_progress") {
-            // Log line already carries its own "[phase]" tag — append as-is.
-            const line = (parsed.content || "").trim();
-            if (line) rec.kotharText += `${line}\n`;
-            rec.kotharStatus = "running";
-            if (parsed.phase) rec.kotharPhase = parsed.phase;
-            patchMessageKothar(sessionId, rec.aiMessageId, {
-              kotharStatus: "running",
-              kotharText: rec.kotharText,
-              kotharPhase: parsed.phase || undefined,
-            });
-          } else if (eventName === "kothar_ready") {
-            rec.kotharStatus = "completed";
-            rec.kotharPptxUrl = parsed.pptx_url || "";
-            patchMessageKothar(sessionId, rec.aiMessageId, {
-              kotharStatus: "completed",
-              kotharPptxUrl: rec.kotharPptxUrl,
-            });
-          } else if (eventName === "kothar_failed") {
-            rec.kotharStatus = "failed";
-            patchMessageKothar(sessionId, rec.aiMessageId, { kotharStatus: "failed" });
-          } else if (eventName === "done") {
-            if (parsed.eshmunReportGeneratingStatus === "in_progress" && isActive()) {
-              setEshmunGenerating(true);
             }
             const cleaned = fixMarkdown(addMissingSpaces(cleanMessage(rec.incoming)));
             finish({
@@ -1404,11 +1274,6 @@ const TryUs = () => {
       answerStarted: false,
       active: true,
       timer: null,
-      kotharStatus: "",
-      kotharJobId: "",
-      kotharPptxUrl: "",
-      kotharText: "",
-      kotharPhase: "",
     };
     streamsRef.current.set(sessionId, rec);
     // We now drive this thread's state locally; don't let a later visit refetch
@@ -1439,8 +1304,10 @@ const TryUs = () => {
       const reasoningTokens = estimateTokens(rec.reasoning);
       const wasActive = activeChatRef.current === sessionId;
 
-      const kotharFinal = (result.agentFinals || []).find(
-        (f: Record<string, any>) => f.agent === "kothar" && f.report_url
+      // Eshmun Step-2 returns its generated PDF as `report_url` on the agent
+      // final — surface it as the chat's downloadable report link.
+      const eshmunReport = (result.agentFinals || []).find(
+        (f: Record<string, any>) => f.agent === "eshmun" && f.report_url
       );
       const eshmunFinal = (result.agentFinals || []).find(
         (f: Record<string, any>) => f.agent === "eshmun" && f.generating === true
@@ -1451,15 +1318,13 @@ const TryUs = () => {
           if (chat.id !== sessionId) return chat;
           return {
             ...chat,
-            ...(kotharFinal?.report_url
-              ? { is_ready: true, report_link: kotharFinal.report_url }
+            ...(eshmunReport?.report_url
+              ? { is_ready: true, report_link: eshmunReport.report_url }
               : {}),
             ...(wasActive ? {} : { hasUnread: true }),
             messages: chat.messages.map((m) =>
               m.id === aiMessageId
                 ? {
-                    // `...m` preserves any kothar_* fields the chat-stream Kothar
-                    // handlers patched onto this message during the build.
                     ...m,
                     content: responseText,
                     reasoning: reasoningText,
@@ -2027,32 +1892,6 @@ const TryUs = () => {
                         </div>
                       )}
                     </div>
-                    {message.role === "assistant" && (() => {
-                      // Driven by the per-message fields, patched live from the
-                      // chat-stream Kothar events (and the status poll on reload).
-                      const status = message.kotharStatus as
-                        | "running"
-                        | "completed"
-                        | "failed"
-                        | undefined;
-                      if (!status) return null;
-                      const text = message.kotharText || "";
-                      const phase = message.kotharPhase || "";
-                      const pptxUrl = message.kotharPptxUrl || "";
-                      return (
-                        <div className="mt-3 max-w-[90%] md:max-w-[85%]">
-                          <BuildingWindow
-                            status={status}
-                            text={text}
-                            phase={phase}
-                            pptxUrl={pptxUrl}
-                            expanded={expandedKothar.has(message.id)}
-                            onToggle={() => toggleKothar(message.id)}
-                            onDownload={(u) => downloadReport(u)}
-                          />
-                        </div>
-                      );
-                    })()}
                     {message.role === "assistant" && streamingMessageId !== message.id && (() => {
                       const isErrorMessage = message.content.toLowerCase().includes("our servers are currently overloaded") ||
                                              message.content.toLowerCase().includes("our servers are overloaded") ||
