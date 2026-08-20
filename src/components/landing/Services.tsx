@@ -12,11 +12,164 @@ const STRATEGY_QUERY = "How should we structure a five-year economic diversifica
 const STRATEGY_RESPONSE =
   "A strong diversification strategy starts by identifying current economic dependencies and the sectors with the greatest growth potential. I would structure it around priority industries, investment, workforce readiness, exports, and delivery governance. Which country is this for, and is the primary goal job creation, export growth, or reduced reliance on one sector?";
 
+/** Recreated strategy slides for the PowerPoint demo — consulting-grade
+ *  structures with generic content (no client material). */
+const SlideShell = ({ title, page, children }: { title: React.ReactNode; page: number; children: React.ReactNode }) => (
+  <div className="absolute inset-0 bg-white flex flex-col px-4 pt-3 pb-2 text-left select-none">
+    <p className="font-body font-bold text-[11px] leading-[1.25] text-[#1E3FBF] max-w-[92%]">{title}</p>
+    <div className="flex-1 min-h-0 mt-2">{children}</div>
+    <div className="flex justify-between items-center mt-1.5">
+      <span className="font-body text-[5.5px] text-black/40">Source: Lam13 analysis — illustrative</span>
+      <span className="font-body text-[5.5px] text-black/40">{page}</span>
+    </div>
+  </div>
+);
+
+/** slide 1: eight-dimension stakeholder diagnostic grid */
+const SlideDiagnostic = () => (
+  <SlideShell title="Eight dimensions were reviewed with stakeholders — aligned on all except delivery capacity" page={7}>
+    <div className="grid grid-cols-4 gap-1.5 h-full">
+      {[
+        { n: 1, t: "Ambition", b: ["Growth targets set", "Mandate confirmed"] },
+        { n: 2, t: "Evidence base", b: ["Baseline agreed", "Benchmarks mapped"] },
+        { n: 3, t: "Priorities", b: ["Sectors shortlisted", "Trade-offs settled"] },
+        { n: 4, t: "Investment", b: ["Funding envelope", "Incentives drafted"] },
+        { n: 5, t: "Governance", b: ["Cadence defined", "Owners named"] },
+        { n: 6, t: "Talent", b: ["Skills gaps sized", "Pipeline planned"] },
+        { n: 7, t: "Data & digital", b: ["Platforms scoped", "Standards set"] },
+        { n: 8, t: "Delivery capacity", b: ["Capability gap", "Differing views"], hot: true },
+      ].map((c) => (
+        <div key={c.n} className={"flex flex-col border " + (c.hot ? "border-[#1E3FBF] bg-[#1E3FBF]" : "border-black/15 bg-white")}>
+          <div className={"flex items-center gap-1 px-1 py-[3px] " + (c.hot ? "bg-[#1E3FBF]" : "bg-[#EEF2FE]")}>
+            <span
+              className={
+                "w-2.5 h-2.5 rounded-full flex items-center justify-center font-body font-bold text-[5px] shrink-0 " +
+                (c.hot ? "bg-white text-[#1E3FBF]" : "bg-[#1E3FBF] text-white")
+              }
+            >
+              {c.n}
+            </span>
+            <span className={"font-body font-bold text-[5.5px] leading-tight " + (c.hot ? "text-white" : "text-[#1E3FBF]")}>{c.t}</span>
+          </div>
+          <ul className={"px-1.5 py-1 flex flex-col gap-[2px] " + (c.hot ? "bg-white/95" : "")}>
+            {c.b.map((x) => (
+              <li key={x} className="font-body text-[5px] leading-[1.35] text-black/70 flex gap-[3px]">
+                <span className="text-[#1E3FBF]">•</span>
+                {x}
+              </li>
+            ))}
+          </ul>
+          {c.hot && (
+            <span className="mx-1.5 mb-1 -rotate-2 bg-black text-white font-body font-bold text-[4.5px] text-center py-[2px]">
+              Priority gap to close
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  </SlideShell>
+);
+
+/** slide 2: vision / pillars / enablers framework house */
+const SlideFramework = () => (
+  <SlideShell title="The growth framework: one vision, three pillars, five enablers" page={12}>
+    <div className="h-full flex gap-2">
+      <div className="w-[26%] bg-[#1E3FBF] text-white px-2 py-2 flex flex-col justify-between">
+        <p className="font-body font-bold text-[8px] leading-[1.3]">Future economy deep dive</p>
+        <p className="font-body text-[5.5px] leading-[1.4] text-white/80">
+          Framework consolidated from 40+ stakeholder sessions and benchmark review of 12 peer economies.
+        </p>
+      </div>
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="relative bg-[#EEF2FE] border border-[#1E3FBF]/30 text-center py-[3px] [clip-path:polygon(3%_100%,0_0,50%_0,100%_0,97%_100%)]">
+          <span className="font-body font-bold text-[6px] text-[#1E3FBF] tracking-wide">VISION — a diversified, innovation-led economy by 2031</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          {["Future industries", "Investment & trade", "Workforce & skills"].map((p, i) => (
+            <div key={p} className="border border-black/15 px-1 py-1.5 text-center bg-white">
+              <span className="mx-auto mb-[3px] w-3 h-3 rounded-full bg-[#1E3FBF] text-white font-body font-bold text-[5.5px] flex items-center justify-center">
+                {i + 1}
+              </span>
+              <span className="font-body font-bold text-[5.5px] leading-tight text-black/85 block">{p}</span>
+              <span className="font-body text-[4.5px] text-black/50 block mt-[2px]">incl. growth targets</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex-1 flex flex-col gap-[3px] justify-end">
+          {["Communication and culture change", "Governance (incl. separation of policy vs delivery)", "Org. structure (incl. unit definitions)", "Talent management (incl. performance-based progression)", "Processes"].map(
+            (e, i) => (
+              <div key={e} className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#7AA0FF] text-white font-body font-bold text-[4.5px] flex items-center justify-center shrink-0">
+                  {i + 4}
+                </span>
+                <span className="flex-1 bg-[#F4F6FE] border border-black/10 font-body text-[5px] text-black/70 px-1.5 py-[2px]">{e}</span>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  </SlideShell>
+);
+
+/** slide 3: KPI and governance dashboard */
+const SlideKpi = () => (
+  <SlideShell title="KPI and governance framework tracks delivery against 2031 targets" page={18}>
+    <div className="h-full flex gap-2">
+      <div className="flex-1 border border-black/15">
+        <div className="grid grid-cols-[1.6fr_1fr_1fr] bg-[#1E3FBF] text-white font-body font-bold text-[5px] px-1.5 py-[3px]">
+          <span>KPI</span>
+          <span className="text-right">Baseline</span>
+          <span className="text-right">2031 target</span>
+        </div>
+        {[
+          ["Non-core GDP share", "31%", "45%"],
+          ["Private investment / GDP", "17%", "24%"],
+          ["High-skill employment", "1.2m", "2.1m"],
+          ["Export diversification index", "0.42", "0.61"],
+          ["Time-to-permit (days)", "160", "45"],
+        ].map((r, i) => (
+          <div
+            key={r[0]}
+            className={"grid grid-cols-[1.6fr_1fr_1fr] font-body text-[5px] px-1.5 py-[3px] " + (i % 2 ? "bg-[#F4F6FE]" : "bg-white")}
+          >
+            <span className="text-black/75">{r[0]}</span>
+            <span className="text-right text-black/55">{r[1]}</span>
+            <span className="text-right font-bold text-[#1E3FBF]">{r[2]}</span>
+          </div>
+        ))}
+      </div>
+      <div className="w-[38%] flex flex-col gap-1.5">
+        <div className="flex-1 border border-black/15 px-1.5 pt-1 pb-1.5 flex flex-col">
+          <span className="font-body font-bold text-[5px] text-black/60">Investment ramp-up, $bn</span>
+          <div className="flex-1 flex items-end gap-1 mt-1" aria-hidden="true">
+            {[22, 34, 48, 66, 82].map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-[2px]">
+                <span className="font-body text-[4.5px] text-black/50">{h}</span>
+                <span className="w-full" style={{ height: `${h * 0.45}px`, background: i >= 3 ? "#1E3FBF" : "#7AA0FF" }} />
+                <span className="font-body text-[4.5px] text-black/40">{27 + i}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border border-black/15 px-1.5 py-1">
+          <span className="font-body font-bold text-[5px] text-black/60 block">Governance cadence</span>
+          {["Ministerial board — quarterly", "Delivery unit — weekly", "Public scorecard — annual"].map((g) => (
+            <span key={g} className="font-body text-[5px] text-black/70 flex gap-[3px] mt-[2px]">
+              <span className="text-[#1E3FBF]">▸</span>
+              {g}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </SlideShell>
+);
+
 const DECK_SLIDES = [
-  "Economic Context and Case for Change",
-  "Strategic Priorities",
-  "Initiative Roadmap",
-  "KPI and Governance Framework",
+  { key: "diagnostic", node: <SlideDiagnostic /> },
+  { key: "framework", node: <SlideFramework /> },
+  { key: "kpi", node: <SlideKpi /> },
 ];
 
 /** Microsoft PowerPoint product icon */
@@ -151,57 +304,11 @@ const StageLabel = ({ children }: { children: React.ReactNode }) => (
   </p>
 );
 
-/** one mini slide preview in the generated set */
-const SlidePreview = ({ index, title }: { index: number; title: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ duration: 0.45, delay: 0.15 + index * 0.18, ease: [0.22, 1, 0.36, 1] }}
-    className="bg-white border border-foreground/15 aspect-[16/10] p-2.5 flex flex-col shadow-[0_14px_34px_-18px_rgba(0,0,0,0.28)]"
-  >
-    <span className="h-[3px] w-8 [background:var(--gradient-accent)] mb-1.5" aria-hidden="true" />
-    <span className="font-display font-bold text-[9px] leading-[1.3] text-foreground">{title}</span>
-    <div className="mt-auto flex items-end gap-1" aria-hidden="true">
-      {index === 0 && (
-        <>
-          <span className="h-1 w-10 bg-black/15" />
-          <span className="h-1 w-6 bg-black/10" />
-          <span className="h-1 w-8 bg-black/15" />
-        </>
-      )}
-      {index === 1 && (
-        <>
-          <span className="h-5 w-4 border border-foreground/20 bg-black/[0.04]" />
-          <span className="h-5 w-4 border border-foreground/20 bg-black/[0.04]" />
-          <span className="h-5 w-4 border border-accent/40 bg-accent/10" />
-        </>
-      )}
-      {index === 2 && (
-        <>
-          <span className="h-1 w-6 bg-accent/60" />
-          <span className="h-1 w-8 bg-black/15" />
-          <span className="h-1 w-10 bg-black/10" />
-        </>
-      )}
-      {index === 3 && (
-        <>
-          <span className="h-2 w-4 bg-black/10" />
-          <span className="h-3 w-4 bg-accent/30" />
-          <span className="h-4 w-4 bg-accent/60" />
-          <span className="h-5 w-4 [background:var(--gradient-accent)]" />
-        </>
-      )}
-    </div>
-    <span className="mt-1 font-display text-[8px] text-muted-foreground/70 self-end" aria-hidden="true">
-      {String(index + 1).padStart(2, "0")}
-    </span>
-  </motion.div>
-);
-
 const DeckVisual = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const inView = useInView(rootRef, { once: true, margin: "-15% 0px" });
   const [stepIdx, setStepIdx] = useState(-1);
+  const [slideIdx, setSlideIdx] = useState(0);
   const [stage, setStage] = useState<"doc" | "steps" | "slides">("doc");
 
   useEffect(() => {
@@ -214,6 +321,7 @@ const DeckVisual = () => {
         if (cancelled) return;
         setStage("doc");
         setStepIdx(-1);
+        setSlideIdx(0);
         await wait(2600);
         if (cancelled) return;
         setStage("steps");
@@ -226,8 +334,14 @@ const DeckVisual = () => {
         setStepIdx(deckSteps.length);
         await wait(600);
         if (cancelled) return;
+        // the generated slides appear one by one
         setStage("slides");
-        await wait(6500);
+        for (let i = 0; i < DECK_SLIDES.length; i++) {
+          if (cancelled) return;
+          setSlideIdx(i);
+          await wait(4200);
+        }
+        await wait(1200);
       }
     })();
     return () => {
@@ -323,12 +437,38 @@ const DeckVisual = () => {
               className="w-full"
             >
               <StageLabel>Generated PowerPoint slides</StageLabel>
-              <div className="grid grid-cols-2 gap-3">
-                {DECK_SLIDES.map((title, i) => (
-                  <SlidePreview key={title} index={i} title={title} />
-                ))}
+              <div className="relative w-full aspect-[16/9] bg-white border border-foreground/15 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)] overflow-hidden">
+                <AnimatePresence mode="popLayout">
+                  <motion.div
+                    key={DECK_SLIDES[slideIdx].key}
+                    aria-label={`Generated slide ${slideIdx + 1} of ${DECK_SLIDES.length}`}
+                    initial={{ opacity: 0, x: 32 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -32 }}
+                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0"
+                  >
+                    {DECK_SLIDES[slideIdx].node}
+                  </motion.div>
+                </AnimatePresence>
               </div>
-              <p className="mt-3 text-center text-[12.5px] text-muted-foreground font-body">
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <div className="flex gap-1.5" aria-hidden="true">
+                  {DECK_SLIDES.map((s, i) => (
+                    <span
+                      key={s.key}
+                      className={
+                        "h-1 transition-all duration-300 " +
+                        (i === slideIdx ? "w-5 [background:var(--gradient-accent)]" : "w-2.5 bg-black/15")
+                      }
+                    />
+                  ))}
+                </div>
+                <span className="font-display text-[11px] text-muted-foreground">
+                  Slide {slideIdx + 1} / {DECK_SLIDES.length}
+                </span>
+              </div>
+              <p className="mt-2 text-center text-[12.5px] text-muted-foreground font-body">
                 Executive-ready slides, fully editable in PowerPoint.
               </p>
             </motion.div>
