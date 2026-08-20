@@ -614,31 +614,74 @@ const DeckVisual = () => {
               className="w-full"
             >
               <StageLabel>LAM 13 processing</StageLabel>
-              <div className="bg-white border border-foreground/10 px-5 py-5 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)]">
-                <div className="flex flex-col gap-2.5">
+              <div className="bg-white border border-foreground/10 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)] overflow-hidden">
+                {/* header: orb + status + overall progress */}
+                <div className="flex items-center gap-2.5 px-5 pt-4 pb-3">
+                  <ThinkingOrb state="working" size={20} theme="light" aria-label="Working" />
+                  <span className="font-display text-[12.5px] text-foreground">Turning the document into slides…</span>
+                  <span className="ml-auto font-display font-bold text-[12px] text-accent tabular-nums">
+                    {Math.min(100, Math.round((Math.max(0, stepIdx) / deckSteps.length) * 100))}%
+                  </span>
+                </div>
+                <div className="mx-5 h-[3px] bg-black/[0.07]" aria-hidden="true">
+                  <motion.div
+                    className="h-full [background:var(--gradient-accent)]"
+                    initial={false}
+                    animate={{ width: `${Math.min(100, (Math.max(0, stepIdx) / deckSteps.length) * 100)}%` }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+                {/* steps: pending dimmed, active highlighted with running underline, done spring-checked */}
+                <div className="flex flex-col px-2 py-3">
                   {deckSteps.map((step, i) => {
-                    if (i > stepIdx) return null;
                     const done = i < stepIdx;
+                    const active = i === stepIdx;
                     return (
-                      <motion.div
+                      <div
                         key={step}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="flex items-center gap-2.5 text-[12.5px]"
+                        className={
+                          "relative flex items-center gap-2.5 text-[12.5px] px-3 py-[7px] transition-colors duration-300 " +
+                          (active ? "bg-[#F4F6FE]" : "")
+                        }
                       >
                         {done ? (
-                          <span
-                            className="w-5 h-5 flex items-center justify-center text-accent font-display font-bold text-[13px]"
+                          <motion.span
+                            initial={{ scale: 0, rotate: -45 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                            className="w-5 h-5 flex items-center justify-center rounded-full [background:var(--gradient-accent)] text-white font-display font-bold text-[10px] shrink-0"
                             aria-hidden="true"
                           >
                             ✓
+                          </motion.span>
+                        ) : active ? (
+                          <span className="w-5 h-5 flex items-center justify-center shrink-0">
+                            <span className="w-3.5 h-3.5 rounded-full border-2 border-accent border-t-transparent animate-spin" aria-hidden="true" />
                           </span>
                         ) : (
-                          <ThinkingOrb state="working" size={20} theme="light" aria-label="Working" />
+                          <span className="w-5 h-5 flex items-center justify-center shrink-0" aria-hidden="true">
+                            <span className="w-2 h-2 rounded-full border border-black/25" />
+                          </span>
                         )}
-                        <span className={done ? "text-muted-foreground" : "text-foreground"}>{step}</span>
-                      </motion.div>
+                        <span
+                          className={
+                            "transition-colors duration-300 " +
+                            (done ? "text-muted-foreground line-through decoration-black/20" : active ? "text-foreground font-bold" : "text-muted-foreground/60")
+                          }
+                        >
+                          {step}
+                        </span>
+                        {active && (
+                          <motion.span
+                            key={`bar-${i}`}
+                            className="absolute bottom-0 left-0 h-[2px] [background:var(--gradient-accent)]"
+                            initial={{ width: "0%" }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 0.85, ease: "linear" }}
+                            aria-hidden="true"
+                          />
+                        )}
+                      </div>
                     );
                   })}
                 </div>
