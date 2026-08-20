@@ -532,7 +532,7 @@ const DeckVisual = () => {
   return (
     <DotPanel>
       {/* fixed height so the card doesn't resize as stages swap */}
-      <div ref={rootRef} className="relative w-full sm:w-[min(560px,96%)] h-[300px] sm:h-[430px] flex items-center justify-center">
+      <div ref={rootRef} className="relative w-full sm:w-[min(560px,96%)] h-[460px] sm:h-[480px] flex items-center justify-center">
         <AnimatePresence mode="wait">
           {stage === "doc" && (
             <motion.div
@@ -541,27 +541,65 @@ const DeckVisual = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="w-full max-w-[340px]"
+              className="w-full flex flex-col items-center"
             >
               <StageLabel>Strategy document</StageLabel>
-              <div className="bg-white border border-foreground/15 px-6 py-6 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)]">
-                <div className="flex items-center gap-3">
-                  <span className="w-9 h-11 border border-foreground/20 bg-black/[0.03] flex flex-col justify-center items-center gap-[3px] shrink-0" aria-hidden="true">
-                    <span className="h-[2px] w-5 bg-black/25" />
-                    <span className="h-[2px] w-5 bg-black/20" />
-                    <span className="h-[2px] w-3.5 bg-black/25" />
-                  </span>
-                  <div>
-                    <p className="font-display font-bold text-[13px] leading-tight">National Economic Growth Plan</p>
-                    <p className="font-body text-[11.5px] text-muted-foreground mt-0.5">2026–2031 · 48 pages</p>
+              <div className="relative mt-1">
+                {/* pages stacked behind the cover */}
+                <div className="absolute inset-0 translate-x-7 translate-y-3 rotate-[4deg] bg-white border border-black/15 shadow-[0_10px_28px_-18px_rgba(0,0,0,0.3)]" aria-hidden="true" />
+                <div className="absolute inset-0 translate-x-3.5 translate-y-1.5 rotate-[2deg] bg-white border border-black/15" aria-hidden="true" />
+                {/* cover page */}
+                <div className="relative w-[280px] sm:w-[310px] h-[340px] sm:h-[368px] bg-white border border-black/15 shadow-[0_28px_64px_-28px_rgba(0,0,0,0.35)] px-5 pt-5 pb-4 flex flex-col text-left">
+                  <span className="h-[3px] w-10 [background:var(--gradient-accent)]" aria-hidden="true" />
+                  <p className="mt-3 font-display font-bold text-[9.5px] tracking-[0.18em] text-[#1E3FBF]">
+                    MINISTRY OF ECONOMY
+                  </p>
+                  <p className="font-display font-bold text-[19px] leading-[1.22] mt-2 text-foreground">
+                    National Economic
+                    <br />
+                    Growth Plan
+                  </p>
+                  <p className="font-body text-[11px] text-muted-foreground mt-1.5">2026–2031 · Final draft for cabinet review</p>
+                  <div className="mt-3.5 border-t border-black/10 pt-3 flex flex-col gap-[7px]">
+                    {[
+                      ["Executive summary", "04"],
+                      ["Economic baseline and benchmarks", "09"],
+                      ["Strategic pillars and priorities", "17"],
+                      ["Initiative portfolio and roadmap", "26"],
+                      ["KPIs and governance", "38"],
+                    ].map(([t, pg]) => (
+                      <div key={t} className="flex items-baseline gap-1.5 font-body text-[10px] text-black/70">
+                        <span>{t}</span>
+                        <span className="flex-1 border-b border-dotted border-black/25 translate-y-[-2px]" aria-hidden="true" />
+                        <span className="text-black/45">{pg}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-auto flex gap-2.5" aria-hidden="true">
+                    <div className="flex-1 border border-black/10 bg-[#FBFBFC] px-2 pt-1.5 pb-2">
+                      <span className="block font-body font-bold text-[7px] text-black/45 mb-1">GDP by sector, %</span>
+                      <div className="flex items-end gap-1 h-8">
+                        {[40, 55, 30, 70, 48].map((h, i) => (
+                          <span key={i} className="flex-1" style={{ height: `${h}%`, background: i === 3 ? "#1E3FBF" : "#C9D6F8" }} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex-1 border border-black/10 bg-[#FBFBFC] px-2 pt-1.5 pb-2">
+                      <span className="block font-body font-bold text-[7px] text-black/45 mb-1">Growth trajectory</span>
+                      <svg viewBox="0 0 60 24" className="w-full h-8" aria-hidden="true">
+                        <polyline points="0,20 12,17 24,18 36,12 48,8 60,3" fill="none" stroke="#1E3FBF" strokeWidth="1.6" />
+                        <polyline points="0,21 12,20 24,21 36,19 48,18 60,17" fill="none" stroke="#C9D6F8" strokeWidth="1.4" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-col gap-2" aria-hidden="true">
-                  <span className="h-1.5 w-full bg-black/10" />
-                  <span className="h-1.5 w-[85%] bg-black/10" />
-                  <span className="h-1.5 w-[70%] bg-black/[0.07]" />
-                  <span className="h-1.5 w-[90%] bg-black/[0.07]" />
-                </div>
+              </div>
+              <div className="mt-5 flex gap-2" aria-hidden="true">
+                {["PDF", "48 pages", "12 chapters"].map((c) => (
+                  <span key={c} className="border border-foreground/15 bg-white px-2.5 py-1 font-display text-[10px] text-muted-foreground">
+                    {c}
+                  </span>
+                ))}
               </div>
             </motion.div>
           )}
