@@ -376,7 +376,7 @@ const ChatWindow = () => {
                 value={input}
                 onChange={setInput}
                 onSubmit={(v) => send(v)}
-                placeholder="Ask about public sector strategy…"
+                placeholder={isMobile ? "Ask Lam13 anything…" : "Ask about public sector strategy…"}
                 models={["LAM13"]}
                 collapsedMaxWidth={520}
                 expandedMaxWidth={760}
