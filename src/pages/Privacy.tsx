@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import LandingHeader from "@/components/landing/LandingHeader";
+import LandingFooter from "@/components/landing/LandingFooter";
 
 const Privacy = () => {
   useEffect(() => {
@@ -14,9 +14,9 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <LandingHeader />
       
-      <main className="flex-1 pt-32 pb-16">
+      <main className="flex-1 pt-16 pb-16">
         <div className="container mx-auto px-6 max-w-4xl">
           <h1 className="text-4xl md:text-5xl font-bold mb-8 text-gradient-accent">
             Privacy Policy
@@ -119,7 +119,7 @@ const Privacy = () => {
         </div>
       </main>
 
-      <Footer />
+      <LandingFooter />
     </div>
   );
 };

@@ -61,4 +61,4 @@ coverage/
 # Optional
 # =========================
 *.local
-temp/
+.vercel

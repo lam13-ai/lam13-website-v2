@@ -1,35 +1,36 @@
 import { useEffect } from "react";
-import Header from "@/components/Header";
-import Hero from "@/components/Hero";
-import WhatWeDo from "@/components/WhatWeDo";
-import WhatIsLam from "@/components/WhatIsLam";
-import VideoSection from "@/components/VideoSection";
-import SavedChats from "@/components/SavedChats";
-import Footer from "@/components/Footer";
+import LandingHeader from "@/components/landing/LandingHeader";
+import LandingHero from "@/components/landing/LandingHero";
+import DemoPanel from "@/components/landing/DemoPanel";
+import Services from "@/components/landing/Services";
+import Team from "@/components/landing/Team";
+import FinalCta from "@/components/landing/FinalCta";
+import LandingFooter from "@/components/landing/LandingFooter";
 
 const Index = () => {
   useEffect(() => {
     document.title = "AI Native Strategy Consulting | Lam13.ai";
-    
-    // Update meta description
+
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute("content", "Disrupting strategy consulting through advanced agentic AI. AI native strategy consulting services across the public sector.");
+      metaDescription.setAttribute(
+        "content",
+        "Disrupting strategy consulting through advanced, patented agentic AI — from national strategy design to board-ready deliverables."
+      );
     }
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div id="top" className="min-h-screen bg-background">
+      <LandingHeader />
       <main>
-        <Hero />
-        <WhatWeDo />
-        <WhatIsLam />
-        {/* Hidden sections - uncomment to show */}
-        {/* <VideoSection /> */}
-        {/* <SavedChats /> */}
+        <LandingHero />
+        <DemoPanel />
+        <Services />
+        <Team />
+        <FinalCta />
       </main>
-      <Footer />
+      <LandingFooter />
     </div>
   );
 };
