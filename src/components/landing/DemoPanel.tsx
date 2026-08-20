@@ -83,13 +83,13 @@ Which country is the plan for, and is its primary focus exports, FDI, productivi
 Which country, and what's the focus — exports, FDI, productivity or diversification?`,
   },
   {
-    chip: "Turn this into a board deck",
-    query: "Turn our strategy into a board-ready deck.",
-    answer: `## Turning Strategy into a Board-Ready Deck
+    chip: "Turn this into board slides",
+    query: "Turn our strategy into board-ready PowerPoint slides.",
+    answer: `## Turning Strategy into Board-Ready Slides
 
-Our work focuses on strategy substance: strong logic, evidence, priorities, and execution. The deck translates that substance into a clear executive narrative.
+Our work focuses on strategy substance: strong logic, evidence, priorities, and execution. The slides translate that substance into a clear executive narrative.
 
-A board-ready national strategy deck typically contains **12 to 18 slides** across four acts:
+A national strategy board deck typically contains **12 to 18 slides** across four acts:
 
 1. **The Case:** Explain the urgency, quantify the cost of inaction, and define success.
 2. **The Evidence:** Present the baseline, relevant benchmarks, and priority gaps.
@@ -104,8 +104,8 @@ A board-ready national strategy deck typically contains **12 to 18 slides** acro
 | **Action-focused close** | End with a specific approval or decision request |
 | **Visual over text** | Use diagrams, roadmaps, and scorecards instead of dense paragraphs |
 
-The strongest value comes from making the content airtight before refining the presentation. Which strategy are we converting into a deck: the national AI strategy or the economic growth plan? Who is the audience, and what decision should they make?`,
-    answerMobile: `A board-ready deck runs **12–18 slides** across four acts:
+The strongest value comes from making the content airtight before refining the presentation. Which strategy are we converting into board slides: the national AI strategy or the economic growth plan? Who is the audience, and what decision should they make?`,
+    answerMobile: `A board deck runs **12–18 slides** across four acts:
 
 1. **The Case** — urgency and cost of inaction.
 2. **The Evidence** — baseline, benchmarks, gaps.

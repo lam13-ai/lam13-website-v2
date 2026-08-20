@@ -230,19 +230,18 @@ const LandingHero = () => {
             variants={{ visible: { transition: { staggerChildren: 0.11, delayChildren: 0.24 } } }}
             className="font-display text-[clamp(1.9rem,4.6vw,3.8rem)] leading-[1.08] tracking-[-0.03em] max-w-[23ch] mx-auto mt-7"
           >
-            {["Lam13", "powers", "the", "world’s", "leading"].map((w) => (
+            {["Transforming", "public", "sector"].map((w) => (
               <motion.span key={w} variants={headWord} className="inline-block whitespace-pre">
                 {w}{" "}
               </motion.span>
             ))}
             <motion.span variants={headWord} className="inline-block">
-              <span className="text-gradient-accent">strategies</span>.
+              <span className="text-gradient-accent">strategy</span>
             </motion.span>
           </motion.h1>
 
           <motion.p {...item(2)} className="max-w-[580px] mx-auto mt-6 text-muted-foreground text-lg">
-            Transforming public strategy through advanced agentic AI, from rigorous national strategy design to
-            board-ready deliverables.
+            From rigorous strategy design to board-ready deliverables.
           </motion.p>
 
           <motion.div {...item(3)} className="relative mt-10 flex gap-4 justify-center items-center flex-wrap">
