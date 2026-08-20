@@ -12,10 +12,12 @@ const STRATEGY_QUERY = "How should we structure a five-year economic diversifica
 const STRATEGY_RESPONSE =
   "A strong diversification strategy starts by identifying current economic dependencies and the sectors with the greatest growth potential. I would structure it around priority industries, investment, workforce readiness, exports, and delivery governance. Which country is this for, and is the primary goal job creation, export growth, or reduced reliance on one sector?";
 
-const DECK_QUERY =
-  "Turn our 5-year economic growth plan into a 15-slide board presentation for ministers. Highlight the evidence, priorities, KPIs, and decisions required.";
-
-const DECK_EDIT_QUERY = "Make the opening more urgent and simplify the KPI slide.";
+const DECK_SLIDES = [
+  "Economic Context and Case for Change",
+  "Strategic Priorities",
+  "Initiative Roadmap",
+  "KPI and Governance Framework",
+];
 
 /** Microsoft PowerPoint product icon */
 const PowerPointIcon = ({ size = 34 }: { size?: number }) => (
@@ -44,7 +46,7 @@ const deckSteps = [
   "Identifying key executive insights",
   "Structuring the board narrative",
   "Creating visuals and KPI scorecards",
-  "Generating an editable PowerPoint deck",
+  "Generating editable PowerPoint slides",
 ];
 
 /** dotted panel shared by both visuals */
@@ -142,15 +144,65 @@ const StrategyVisual = () => {
   );
 };
 
-/** animated deck generation: query → AI processing steps → generating → slide */
+/** PowerPoint demo: Strategy document -> LAM 13 processing -> Generated PowerPoint slides */
+const StageLabel = ({ children }: { children: React.ReactNode }) => (
+  <p className="font-display font-bold text-[10.5px] tracking-[0.18em] uppercase text-muted-foreground mb-3 text-center">
+    {children}
+  </p>
+);
+
+/** one mini slide preview in the generated set */
+const SlidePreview = ({ index, title }: { index: number; title: string }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10, scale: 0.96 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: 0.45, delay: 0.15 + index * 0.18, ease: [0.22, 1, 0.36, 1] }}
+    className="bg-white border border-foreground/15 aspect-[16/10] p-2.5 flex flex-col shadow-[0_14px_34px_-18px_rgba(0,0,0,0.28)]"
+  >
+    <span className="h-[3px] w-8 [background:var(--gradient-accent)] mb-1.5" aria-hidden="true" />
+    <span className="font-display font-bold text-[9px] leading-[1.3] text-foreground">{title}</span>
+    <div className="mt-auto flex items-end gap-1" aria-hidden="true">
+      {index === 0 && (
+        <>
+          <span className="h-1 w-10 bg-black/15" />
+          <span className="h-1 w-6 bg-black/10" />
+          <span className="h-1 w-8 bg-black/15" />
+        </>
+      )}
+      {index === 1 && (
+        <>
+          <span className="h-5 w-4 border border-foreground/20 bg-black/[0.04]" />
+          <span className="h-5 w-4 border border-foreground/20 bg-black/[0.04]" />
+          <span className="h-5 w-4 border border-accent/40 bg-accent/10" />
+        </>
+      )}
+      {index === 2 && (
+        <>
+          <span className="h-1 w-6 bg-accent/60" />
+          <span className="h-1 w-8 bg-black/15" />
+          <span className="h-1 w-10 bg-black/10" />
+        </>
+      )}
+      {index === 3 && (
+        <>
+          <span className="h-2 w-4 bg-black/10" />
+          <span className="h-3 w-4 bg-accent/30" />
+          <span className="h-4 w-4 bg-accent/60" />
+          <span className="h-5 w-4 [background:var(--gradient-accent)]" />
+        </>
+      )}
+    </div>
+    <span className="mt-1 font-display text-[8px] text-muted-foreground/70 self-end" aria-hidden="true">
+      {String(index + 1).padStart(2, "0")}
+    </span>
+  </motion.div>
+);
+
 const DeckVisual = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const inView = useInView(rootRef, { once: true, margin: "-15% 0px" });
   const [stepIdx, setStepIdx] = useState(-1);
-  const [stage, setStage] = useState<
-    "query" | "steps" | "gen" | "image" | "editPrompt" | "editGen" | "editImage"
-  >("query");
-  const [editTyped, setEditTyped] = useState("");
+  const [stage, setStage] = useState<"doc" | "steps" | "slides">("doc");
 
   useEffect(() => {
     if (!inView) return;
@@ -160,9 +212,9 @@ const DeckVisual = () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         if (cancelled) return;
-        setStage("query");
+        setStage("doc");
         setStepIdx(-1);
-        await wait(1800);
+        await wait(2600);
         if (cancelled) return;
         setStage("steps");
         for (let i = 0; i < deckSteps.length; i++) {
@@ -172,29 +224,10 @@ const DeckVisual = () => {
         }
         if (cancelled) return;
         setStepIdx(deckSteps.length);
-        setStage("gen");
-        await wait(2600);
+        await wait(600);
         if (cancelled) return;
-        setStage("image");
-        await wait(4200);
-        // the user asks for an edit: a small input appears over the slide,
-        // the edit request types in, then the deck regenerates
-        if (cancelled) return;
-        setStage("editPrompt");
-        setEditTyped("");
-        await wait(700);
-        for (let c = 0; c < DECK_EDIT_QUERY.length; c++) {
-          if (cancelled) return;
-          setEditTyped(DECK_EDIT_QUERY.slice(0, c + 1));
-          await wait(26);
-        }
-        await wait(800);
-        if (cancelled) return;
-        setStage("editGen");
-        await wait(2400);
-        if (cancelled) return;
-        setStage("editImage");
-        await wait(5200);
+        setStage("slides");
+        await wait(6500);
       }
     })();
     return () => {
@@ -206,16 +239,35 @@ const DeckVisual = () => {
     <DotPanel>
       <div ref={rootRef} className="relative w-full sm:w-[min(440px,94%)] min-h-[340px] flex items-center justify-center">
         <AnimatePresence mode="wait">
-          {stage === "query" && (
+          {stage === "doc" && (
             <motion.div
-              key="query"
+              key="doc"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="bg-foreground text-background px-5 py-4 max-w-[92%] text-[12.5px] leading-relaxed font-display"
+              className="w-full max-w-[340px]"
             >
-              {DECK_QUERY}
+              <StageLabel>Strategy document</StageLabel>
+              <div className="bg-white border border-foreground/15 px-6 py-6 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)]">
+                <div className="flex items-center gap-3">
+                  <span className="w-9 h-11 border border-foreground/20 bg-black/[0.03] flex flex-col justify-center items-center gap-[3px] shrink-0" aria-hidden="true">
+                    <span className="h-[2px] w-5 bg-black/25" />
+                    <span className="h-[2px] w-5 bg-black/20" />
+                    <span className="h-[2px] w-3.5 bg-black/25" />
+                  </span>
+                  <div>
+                    <p className="font-display font-bold text-[13px] leading-tight">National Economic Growth Plan</p>
+                    <p className="font-body text-[11.5px] text-muted-foreground mt-0.5">2026–2031 · 48 pages</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-col gap-2" aria-hidden="true">
+                  <span className="h-1.5 w-full bg-black/10" />
+                  <span className="h-1.5 w-[85%] bg-black/10" />
+                  <span className="h-1.5 w-[70%] bg-black/[0.07]" />
+                  <span className="h-1.5 w-[90%] bg-black/[0.07]" />
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -226,175 +278,58 @@ const DeckVisual = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="w-full bg-white border border-foreground/10 px-5 py-5 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)]"
+              className="w-full"
             >
-              <div className="flex flex-col gap-2.5">
-                {deckSteps.map((step, i) => {
-                  if (i > stepIdx) return null;
-                  const done = i < stepIdx;
-                  return (
-                    <motion.div
-                      key={step}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex items-center gap-2.5 text-[12.5px]"
-                    >
-                      {done ? (
-                        <span
-                          className="w-5 h-5 flex items-center justify-center text-accent font-display font-bold text-[13px]"
-                          aria-hidden="true"
-                        >
-                          ✓
-                        </span>
-                      ) : (
-                        <ThinkingOrb state="working" size={20} theme="light" aria-label="Working" />
-                      )}
-                      <span className={done ? "text-muted-foreground" : "text-foreground"}>{step}</span>
-                    </motion.div>
-                  );
-                })}
+              <StageLabel>LAM 13 processing</StageLabel>
+              <div className="bg-white border border-foreground/10 px-5 py-5 shadow-[0_18px_44px_-24px_rgba(0,0,0,0.2)]">
+                <div className="flex flex-col gap-2.5">
+                  {deckSteps.map((step, i) => {
+                    if (i > stepIdx) return null;
+                    const done = i < stepIdx;
+                    return (
+                      <motion.div
+                        key={step}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex items-center gap-2.5 text-[12.5px]"
+                      >
+                        {done ? (
+                          <span
+                            className="w-5 h-5 flex items-center justify-center text-accent font-display font-bold text-[13px]"
+                            aria-hidden="true"
+                          >
+                            ✓
+                          </span>
+                        ) : (
+                          <ThinkingOrb state="working" size={20} theme="light" aria-label="Working" />
+                        )}
+                        <span className={done ? "text-muted-foreground" : "text-foreground"}>{step}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           )}
 
-          {stage === "gen" && (
+          {stage === "slides" && (
             <motion.div
-              key="gen"
+              key="slides"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="relative border border-foreground/10 bg-white aspect-[16/10] w-full overflow-hidden"
-              aria-label="Generating deck preview"
+              className="w-full"
             >
-              <div
-                className="absolute inset-5 animate-pulse [background-image:radial-gradient(circle,rgba(0,0,0,0.18)_2px,transparent_2px)] [background-size:22px_22px] [mask-image:radial-gradient(60%_60%_at_45%_45%,#000_30%,transparent_100%)]"
-                aria-hidden="true"
-              />
-              <span className="absolute top-3 left-4 font-body text-[13px] text-muted-foreground">Working…</span>
-            </motion.div>
-          )}
-
-          {stage === "image" && (
-            <motion.div
-              key="image"
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="relative w-full"
-            >
-              <img
-                src="/deckslide.png"
-                alt="Generated board deck slide"
-                className="w-full border border-foreground/10 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)]"
-              />
+              <StageLabel>Generated PowerPoint slides</StageLabel>
+              <div className="grid grid-cols-2 gap-3">
+                {DECK_SLIDES.map((title, i) => (
+                  <SlidePreview key={title} index={i} title={title} />
+                ))}
+              </div>
               <p className="mt-3 text-center text-[12.5px] text-muted-foreground font-body">
-                First draft generated — a 15-slide ministerial board deck, fully editable.
-              </p>
-            </motion.div>
-          )}
-
-          {stage === "editPrompt" && (
-            <motion.div
-              key="editPrompt"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="relative w-full"
-            >
-              <img
-                src="/deckslide.png"
-                alt="Generated board deck slide"
-                className="w-full border border-foreground/10 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)]"
-              />
-              {/* selection pin marking the edit point on the slide */}
-              <motion.span
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.35, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute left-[16%] top-[30%]"
-                aria-hidden="true"
-              >
-                <span className="relative flex size-4">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-accent opacity-50 animate-ping" />
-                  <span className="relative inline-flex size-4 rounded-full bg-accent border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.35)]" />
-                </span>
-              </motion.span>
-
-              {/* multiline edit input below the slide, so the slide stays visible */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.35 }}
-                className="mt-3 flex justify-center"
-              >
-                <div className="w-full max-w-[380px] bg-white rounded-2xl border border-foreground/15 shadow-[0_14px_36px_-10px_rgba(0,0,0,0.3)] px-4 pt-3 pb-2">
-                  <div className="min-h-[38px] text-[12.5px] leading-relaxed font-body whitespace-pre-wrap">
-                    {editTyped ? (
-                      <span className="text-foreground">{editTyped}</span>
-                    ) : (
-                      <span className="text-muted-foreground/70">Tell Lam13 what to edit…</span>
-                    )}
-                  </div>
-                  <div className="flex justify-end pt-1">
-                    <span
-                      className={
-                        "size-7 shrink-0 rounded-full flex items-center justify-center transition-colors " +
-                        (editTyped.length === DECK_EDIT_QUERY.length
-                          ? "bg-foreground text-white"
-                          : "bg-black/10 text-foreground/50")
-                      }
-                      aria-hidden="true"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                        <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {stage === "editGen" && (
-            <motion.div
-              key="editGen"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.4 }}
-              className="relative border border-foreground/10 bg-white aspect-[16/10] w-full overflow-hidden"
-              aria-label="Applying edits to the deck"
-            >
-              <div
-                className="absolute inset-5 animate-pulse [background-image:radial-gradient(circle,rgba(0,0,0,0.18)_2px,transparent_2px)] [background-size:22px_22px] [mask-image:radial-gradient(60%_60%_at_45%_45%,#000_30%,transparent_100%)]"
-                aria-hidden="true"
-              />
-              <span className="absolute top-3 left-4 font-body text-[13px] text-muted-foreground">
-                Applying edits…
-              </span>
-            </motion.div>
-          )}
-
-          {stage === "editImage" && (
-            <motion.div
-              key="editImage"
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="relative w-full"
-            >
-              <img
-                src="/deckafteredit.png"
-                alt="Edited board deck slide"
-                className="w-full border border-foreground/10 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)]"
-              />
-              <p className="mt-3 text-center text-[12.5px] text-muted-foreground font-body">
-                Edits applied — the opening is more urgent and the KPI slide is simplified.
+                Executive-ready slides, fully editable in PowerPoint.
               </p>
             </motion.div>
           )}
@@ -431,14 +366,10 @@ const Services = () => (
             <span className="text-accent inline-block">
               <Landmark size={30} strokeWidth={1.7} />
             </span>
-            <h3 className="font-display text-[clamp(1.4rem,2.6vw,2rem)] mt-5">Create public strategies.</h3>
+            <h3 className="font-display text-[clamp(1.4rem,2.6vw,2rem)] mt-5">Create and review public strategy</h3>
             <p className="text-muted-foreground mt-4 text-[16px] max-w-[52ch]">
-              Turn your objectives into structured public strategies with clear frameworks, benchmark research,
-              prioritized initiatives, measurable KPIs, and defined governance.
-            </p>
-            <p className="text-muted-foreground mt-3 text-[16px] max-w-[52ch]">
-              The AI organizes the content into a coherent storyline, suggests slide titles, and refines the strategy
-              through follow-up prompts, ready to take into the room.
+              Develop public sector strategies from the ground up, or stress-test existing national strategies, surface
+              gaps, and generate recommendations and content to bridge them.
             </p>
           </div>
         </Reveal>
@@ -459,17 +390,16 @@ const Services = () => (
             <div>
               <PowerPointIcon />
               <h3 className="font-display text-[clamp(1.4rem,2.6vw,2rem)] mt-5">
-                Turn complex strategy into a decision-ready board deck.
+                Turn complex strategy into decision-ready slides
               </h3>
               <p className="text-muted-foreground mt-4 text-[16px] max-w-[52ch]">
-                Transform detailed strategy documents into clear, executive-level presentations built around the
-                decisions that matter. The AI structures your evidence, strategic priorities, initiatives, KPIs,
-                governance, and next steps into a focused narrative for senior stakeholders.
+                Transform detailed strategy documents into clear, executive-ready PowerPoint slides using proven
+                strategy layouts and presentation patterns used by leading strategy organisations.
               </p>
               <p className="text-muted-foreground mt-3 text-[16px] max-w-[52ch]">
-                Use follow-up prompts to strengthen the storyline, simplify complex slides, adjust the level of detail,
-                or refine the visuals. When the presentation is ready, export it as a fully editable PowerPoint for
-                final review and delivery.
+                Use LAM 13&rsquo;s strategy slide designs or adapt the output to your organisation&rsquo;s existing
+                PowerPoint templates, branding, and visual language. Refine the narrative, slides, and visuals through
+                follow-up prompts to support executive alignment and decision-making.
               </p>
             </div>
           </Reveal>
