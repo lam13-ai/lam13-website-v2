@@ -673,10 +673,11 @@ const DeckVisual = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="w-full"
+              className="w-full h-full flex flex-col"
             >
               <StageLabel>Generated PowerPoint slides</StageLabel>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex-1 flex items-center min-h-0">
+              <div className="w-full grid grid-cols-3 gap-2">
                 {DECK_SLIDES.map((s, i) => (
                   <motion.div
                     key={s.key}
@@ -695,7 +696,8 @@ const DeckVisual = () => {
                   </motion.div>
                 ))}
               </div>
-              <p className="mt-3 text-center text-[12.5px] text-muted-foreground font-body">
+              </div>
+              <p className="mt-auto pt-3 text-center text-[12.5px] text-muted-foreground font-body">
                 {DECK_SLIDES.length} strategy slides generated.
               </p>
             </motion.div>
@@ -708,9 +710,10 @@ const DeckVisual = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.4 }}
-              className="w-full"
+              className="w-full h-full flex flex-col"
             >
               <StageLabel>Generated PowerPoint slides</StageLabel>
+              <div className="flex-1 flex items-center min-h-0">
               <div className="relative w-full aspect-[16/9] bg-white border border-foreground/15 shadow-[0_24px_60px_-24px_rgba(0,0,0,0.3)] overflow-hidden">
                 <AnimatePresence mode="popLayout">
                   <motion.div
@@ -726,25 +729,29 @@ const DeckVisual = () => {
                   </motion.div>
                 </AnimatePresence>
               </div>
-              <div className="mt-3 flex items-center justify-center gap-3">
-                <div className="flex gap-1.5" aria-hidden="true">
-                  {DECK_SLIDES.map((s, i) => (
-                    <span
-                      key={s.key}
-                      className={
-                        "h-1 transition-all duration-300 " +
-                        (i === slideIdx ? "w-5 [background:var(--gradient-accent)]" : "w-2.5 bg-black/15")
-                      }
-                    />
-                  ))}
-                </div>
-                <span className="font-display text-[11px] text-muted-foreground">
-                  Slide {slideIdx + 1} / {DECK_SLIDES.length}
-                </span>
               </div>
-              <p className="mt-2 text-center text-[12.5px] text-muted-foreground font-body">
-                Executive-ready slides, fully editable in PowerPoint.
-              </p>
+              {/* progress + caption pinned to the bottom of the card */}
+              <div className="mt-auto pt-3">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="flex gap-1.5" aria-hidden="true">
+                    {DECK_SLIDES.map((s, i) => (
+                      <span
+                        key={s.key}
+                        className={
+                          "h-1 transition-all duration-300 " +
+                          (i === slideIdx ? "w-5 [background:var(--gradient-accent)]" : "w-2.5 bg-black/15")
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span className="font-display text-[11px] text-muted-foreground">
+                    Slide {slideIdx + 1} / {DECK_SLIDES.length}
+                  </span>
+                </div>
+                <p className="mt-2 text-center text-[12.5px] text-muted-foreground font-body">
+                  Executive-ready slides, fully editable in PowerPoint.
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
