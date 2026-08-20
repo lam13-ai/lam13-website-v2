@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import "./appInsights";
 
 // Animations are part of the design and must run everywhere — including
 // iPhones with Reduce Motion / Low Power Mode, which otherwise freeze

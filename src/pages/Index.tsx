@@ -3,9 +3,6 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
 import DemoPanel from "@/components/landing/DemoPanel";
 import Services from "@/components/landing/Services";
-// import Approach from "@/components/landing/Approach";
-// import Walkthrough from "@/components/landing/Walkthrough";
-// import PaperSection from "@/components/landing/PaperSection";
 import Team from "@/components/landing/Team";
 import FinalCta from "@/components/landing/FinalCta";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -30,9 +27,6 @@ const Index = () => {
         <LandingHero />
         <DemoPanel />
         <Services />
-        {/* <Approach /> */}
-        {/* <Walkthrough /> */}
-        {/* <PaperSection /> */}
         <Team />
         <FinalCta />
       </main>
