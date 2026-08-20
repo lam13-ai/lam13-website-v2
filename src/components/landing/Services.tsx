@@ -166,9 +166,183 @@ const SlideKpi = () => (
   </SlideShell>
 );
 
+/** slide 4: opportunity spider — long list radiating from the core */
+const SlideSpider = () => (
+  <SlideShell title="80+ growth opportunities identified across eight clusters" page={9}>
+    <svg viewBox="0 0 340 150" className="w-full h-full" role="img" aria-label="Opportunity spider chart">
+      {[
+        { x: 50, y: 22, t: "Advanced manufacturing", n: 14 },
+        { x: 250, y: 16, t: "Digital services", n: 12 },
+        { x: 306, y: 52, t: "Green energy", n: 11 },
+        { x: 300, y: 112, t: "Tourism & culture", n: 9 },
+        { x: 236, y: 138, t: "Agritech & food", n: 10 },
+        { x: 92, y: 140, t: "Logistics & trade", n: 8 },
+        { x: 26, y: 106, t: "Health & life sciences", n: 9 },
+        { x: 28, y: 58, t: "Financial services", n: 9 },
+      ].map((c) => (
+        <g key={c.t}>
+          <line x1="170" y1="76" x2={c.x} y2={c.y} stroke="#1E3FBF" strokeOpacity="0.25" strokeWidth="0.8" />
+          <circle cx={c.x} cy={c.y} r="3" fill="#7AA0FF" />
+          <text x={c.x} y={c.y - 6} textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#1E3FBF">
+            {c.t}
+          </text>
+          <text x={c.x} y={c.y + 11} textAnchor="middle" fontSize="5.5" fill="rgba(0,0,0,0.5)">
+            {c.n} opportunities
+          </text>
+        </g>
+      ))}
+      <circle cx="170" cy="76" r="24" fill="#1E3FBF" />
+      <text x="170" y="73" textAnchor="middle" fontSize="7" fontWeight="700" fill="#fff">
+        Growth
+      </text>
+      <text x="170" y="83" textAnchor="middle" fontSize="7" fontWeight="700" fill="#fff">
+        2031
+      </text>
+    </svg>
+  </SlideShell>
+);
+
+/** slide 5: phased initiative roadmap */
+const SlideRoadmap = () => (
+  <SlideShell title="Initiative roadmap phases delivery across three horizons" page={14}>
+    <div className="h-full flex flex-col">
+      <div className="grid grid-cols-[1.1fr_1fr_1fr_1fr] gap-[3px] mb-[3px]">
+        <span />
+        {["Phase 1 — 2027", "Phase 2 — 2028–29", "Phase 3 — 2030–31"].map((p) => (
+          <span key={p} className="bg-[#1E3FBF] text-white font-body font-bold text-[5px] text-center py-[3px]">
+            {p}
+          </span>
+        ))}
+      </div>
+      {[
+        { l: "Future industries", bars: [["Sector packages", 0, 1], ["Anchor investors", 1, 2], ["Scale-up", 2, 3]] },
+        { l: "Investment & trade", bars: [["Incentive reform", 0, 2], ["Trade corridors", 2, 3]] },
+        { l: "Workforce & skills", bars: [["Skills academies", 0, 1], ["Reskilling at scale", 1, 3]] },
+        { l: "Enablers", bars: [["Delivery unit", 0, 1], ["Digital platforms", 0, 2], ["Regulatory reform", 1, 3]] },
+      ].map((row, ri) => (
+        <div key={row.l} className={"grid grid-cols-[1.1fr_1fr_1fr_1fr] gap-[3px] items-stretch flex-1 " + (ri % 2 ? "bg-[#F4F6FE]" : "")}>
+          <span className="font-body font-bold text-[5px] text-black/70 flex items-center px-1">{row.l}</span>
+          <div className="relative col-span-3 my-[3px]">
+            {row.bars.map(([t, s, e], bi) => (
+              <span
+                key={t as string}
+                className="absolute h-[9px] flex items-center px-1 font-body text-[4.5px] text-white whitespace-nowrap overflow-hidden"
+                style={{
+                  left: `${((s as number) / 3) * 100 + 0.5}%`,
+                  width: `${(((e as number) - (s as number)) / 3) * 100 - 1}%`,
+                  top: `${bi * 12}px`,
+                  background: bi % 2 ? "#7AA0FF" : "#1E3FBF",
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </SlideShell>
+);
+
+/** slide 6: prioritization matrix */
+const SlideMatrix = () => (
+  <SlideShell title="Twelve priority plays mapped by attractiveness and feasibility" page={11}>
+    <div className="h-full flex gap-2">
+      <div className="relative flex-1 border-l border-b border-black/30 ml-3 mb-2 mr-1">
+        <span className="absolute -left-3 top-1/2 -translate-y-1/2 -rotate-90 font-body font-bold text-[5px] text-black/50 whitespace-nowrap">
+          Attractiveness →
+        </span>
+        <span className="absolute left-1/2 -bottom-2.5 -translate-x-1/2 font-body font-bold text-[5px] text-black/50">
+          Feasibility →
+        </span>
+        <span className="absolute inset-y-0 left-1/2 border-l border-dashed border-black/15" aria-hidden="true" />
+        <span className="absolute inset-x-0 top-1/2 border-t border-dashed border-black/15" aria-hidden="true" />
+        {[
+          { x: 74, y: 12, r: 9, t: "Green hydrogen", hot: true },
+          { x: 84, y: 30, r: 7, t: "Fintech hub", hot: true },
+          { x: 58, y: 22, r: 6, t: "Agritech" },
+          { x: 66, y: 52, r: 5, t: "Med-tourism" },
+          { x: 30, y: 34, r: 6, t: "Aerospace MRO" },
+          { x: 40, y: 66, r: 5, t: "Creative economy" },
+          { x: 16, y: 76, r: 4, t: "Rare earths" },
+        ].map((b) => (
+          <span key={b.t} className="absolute" style={{ left: `${b.x}%`, top: `${b.y}%` }}>
+            <span
+              className="block rounded-full"
+              style={{
+                width: `${b.r * 2}px`,
+                height: `${b.r * 2}px`,
+                background: b.hot ? "#1E3FBF" : "#7AA0FF",
+                opacity: b.hot ? 1 : 0.75,
+              }}
+            />
+            <span className="absolute left-1/2 -translate-x-1/2 top-full mt-[1px] font-body text-[4.5px] text-black/65 whitespace-nowrap">
+              {b.t}
+            </span>
+          </span>
+        ))}
+      </div>
+      <div className="w-[30%] flex flex-col gap-1">
+        <div className="bg-[#EEF2FE] border border-[#1E3FBF]/25 px-1.5 py-1">
+          <span className="font-body font-bold text-[5px] text-[#1E3FBF] block">Priority quadrant</span>
+          <span className="font-body text-[4.5px] text-black/60 leading-[1.4] block mt-[2px]">
+            Two plays combine high attractiveness with proven feasibility — sequence first.
+          </span>
+        </div>
+        <div className="border border-black/15 px-1.5 py-1 flex-1">
+          <span className="font-body font-bold text-[5px] text-black/60 block">Bubble size</span>
+          <span className="font-body text-[4.5px] text-black/55 leading-[1.4] block mt-[2px]">
+            Estimated 2031 GVA contribution
+          </span>
+        </div>
+      </div>
+    </div>
+  </SlideShell>
+);
+
+/** slide 7: long-list to priority funnel */
+const SlideFunnel = () => (
+  <SlideShell title="From 80 opportunities to five priority plays through four screens" page={10}>
+    <div className="h-full flex gap-2">
+      <div className="flex-1 flex flex-col justify-center gap-1.5">
+        {[
+          { t: "Long list", n: 80, w: "100%", d: "All clusters, no filter" },
+          { t: "Strategic fit", n: 38, w: "76%", d: "Aligned with vision and pillars" },
+          { t: "Market screen", n: 16, w: "52%", d: "Demand, competition, margins" },
+          { t: "Priority plays", n: 5, w: "30%", d: "Feasible now, funded, owned", hot: true },
+        ].map((s) => (
+          <div key={s.t} className="flex items-center gap-1.5">
+            <div
+              className={"h-[22px] flex items-center justify-between px-2 [clip-path:polygon(0_0,100%_0,96%_50%,100%_100%,0_100%,4%_50%)] " + (s.hot ? "" : "")}
+              style={{ width: s.w, background: s.hot ? "#1E3FBF" : "#EEF2FE", border: s.hot ? "none" : "1px solid rgba(30,63,191,0.25)" }}
+            >
+              <span className={"font-body font-bold text-[5.5px] " + (s.hot ? "text-white" : "text-[#1E3FBF]")}>{s.t}</span>
+              <span className={"font-body font-bold text-[7px] " + (s.hot ? "text-white" : "text-[#1E3FBF]")}>{s.n}</span>
+            </div>
+            <span className="font-body text-[4.5px] text-black/55 flex-1 leading-[1.35]">{s.d}</span>
+          </div>
+        ))}
+      </div>
+      <div className="w-[27%] border border-black/15 px-1.5 py-1.5 self-center">
+        <span className="font-body font-bold text-[5px] text-black/60 block">Screening criteria</span>
+        {["GVA and job potential", "Export orientation", "Time to first revenue", "Capability to deliver", "Capital intensity"].map((c) => (
+          <span key={c} className="font-body text-[4.5px] text-black/65 flex gap-[3px] mt-[3px]">
+            <span className="text-[#1E3FBF]">▸</span>
+            {c}
+          </span>
+        ))}
+      </div>
+    </div>
+  </SlideShell>
+);
+
 const DECK_SLIDES = [
   { key: "diagnostic", node: <SlideDiagnostic /> },
+  { key: "spider", node: <SlideSpider /> },
+  { key: "funnel", node: <SlideFunnel /> },
+  { key: "matrix", node: <SlideMatrix /> },
   { key: "framework", node: <SlideFramework /> },
+  { key: "roadmap", node: <SlideRoadmap /> },
   { key: "kpi", node: <SlideKpi /> },
 ];
 
@@ -309,7 +483,7 @@ const DeckVisual = () => {
   const inView = useInView(rootRef, { once: true, margin: "-15% 0px" });
   const [stepIdx, setStepIdx] = useState(-1);
   const [slideIdx, setSlideIdx] = useState(0);
-  const [stage, setStage] = useState<"doc" | "steps" | "slides">("doc");
+  const [stage, setStage] = useState<"doc" | "steps" | "gen" | "collage" | "slides">("doc");
 
   useEffect(() => {
     if (!inView) return;
@@ -334,7 +508,13 @@ const DeckVisual = () => {
         setStepIdx(deckSteps.length);
         await wait(600);
         if (cancelled) return;
-        // the generated slides appear one by one
+        // generation shimmer, then a collage of the full set, then one by one
+        setStage("gen");
+        await wait(2400);
+        if (cancelled) return;
+        setStage("collage");
+        await wait(3400);
+        if (cancelled) return;
         setStage("slides");
         for (let i = 0; i < DECK_SLIDES.length; i++) {
           if (cancelled) return;
@@ -351,7 +531,8 @@ const DeckVisual = () => {
 
   return (
     <DotPanel>
-      <div ref={rootRef} className="relative w-full sm:w-[min(440px,94%)] min-h-[340px] flex items-center justify-center">
+      {/* fixed height so the card doesn't resize as stages swap */}
+      <div ref={rootRef} className="relative w-full sm:w-[min(560px,96%)] h-[300px] sm:h-[430px] flex items-center justify-center">
         <AnimatePresence mode="wait">
           {stage === "doc" && (
             <motion.div
@@ -424,6 +605,61 @@ const DeckVisual = () => {
                   })}
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {stage === "gen" && (
+            <motion.div
+              key="gen"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className="w-full"
+            >
+              <StageLabel>LAM 13 processing</StageLabel>
+              <div className="relative w-full aspect-[16/9] bg-white border border-foreground/15 overflow-hidden" aria-label="Generating slides">
+                <div
+                  className="absolute inset-5 animate-pulse [background-image:radial-gradient(circle,rgba(0,0,0,0.18)_2px,transparent_2px)] [background-size:22px_22px] [mask-image:radial-gradient(60%_60%_at_45%_45%,#000_30%,transparent_100%)]"
+                  aria-hidden="true"
+                />
+                <span className="absolute top-3 left-4 font-body text-[13px] text-muted-foreground">Generating slides…</span>
+              </div>
+            </motion.div>
+          )}
+
+          {stage === "collage" && (
+            <motion.div
+              key="collage"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4 }}
+              className="w-full"
+            >
+              <StageLabel>Generated PowerPoint slides</StageLabel>
+              <div className="grid grid-cols-3 gap-2">
+                {DECK_SLIDES.map((s, i) => (
+                  <motion.div
+                    key={s.key}
+                    initial={{ opacity: 0, y: 14, scale: 0.94 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.4, delay: 0.15 + i * 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className={
+                      "relative aspect-[16/9] bg-white border border-foreground/15 shadow-[0_14px_34px_-18px_rgba(0,0,0,0.28)] overflow-hidden " +
+                      (i === 6 ? "col-start-2" : "")
+                    }
+                  >
+                    {/* render at 3x then scale down so the fixed-px slide layout stays intact */}
+                    <div className="absolute top-0 left-0 w-[300%] h-[300%] origin-top-left scale-[0.3334]">
+                      <div className="absolute inset-0">{s.node}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+              <p className="mt-3 text-center text-[12.5px] text-muted-foreground font-body">
+                {DECK_SLIDES.length} strategy slides generated.
+              </p>
             </motion.div>
           )}
 
